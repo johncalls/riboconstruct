@@ -14,13 +14,13 @@ from .riboswitch import riboswitch as rs
 from .riboswitch import element as rs_e
 from .riboswitch import siblings_generator as sg
 
-from .rna_f import wrap
+from . import rna_f
 
 
 OUTPUT_DIR = None
 
 
-rna_f = wrap.RNAf()
+rna_f = rna_f.RNAf()
 
 
 def set_output_dir(output_dir):

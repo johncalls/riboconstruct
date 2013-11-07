@@ -1,7 +1,7 @@
 from ..inverse_folding import two_target_local_refinement as loc_ref
 from ..riboswitch import riboswitch as rs
 from ..riboswitch import siblings_generator_2 as sg
-from ..rna_f import wrap as rna_f
+from .. import rna_f
 
 
 OUTPUT_DIR = "/home/john/projects/masterthesis/riboswitch_construction/riboconstruct/evaluation_mp2"

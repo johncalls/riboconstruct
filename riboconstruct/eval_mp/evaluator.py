@@ -6,12 +6,12 @@ from . import settings
 from .. import main
 from .. import helper
 from .. import params
+from .. import rna_f
 from ..riboswitch import riboswitch as rs
 from ..riboswitch import element as rs_e
-from ..rna_f import wrap
 
 
-rna_f = wrap.RNAf()
+rna_f = rna_f.RNAf()
 
 
 class Loader(mp.Process):
