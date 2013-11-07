@@ -13,7 +13,7 @@ riboconstruct can only be used in combination with **RNAf** provided by Robert K
 
 ## Build doc
 
-1. Install **sphinx** (*easy_install -U Sphinx*)
+1. Install **sphinx** via [easy_install](https://pypi.python.org/pypi/setuptools) (*easy_install -U Sphinx*)
 2. Change into project folder *doc*
 3. Build docs using *make*
 4. Results can be found in *doc/_build*
