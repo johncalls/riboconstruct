@@ -184,6 +184,20 @@ def base_valid_IUPAC(iu, b_id):
     raise ValueError('Invalid IUPAC symbol %i' % b_id)
 
 
+def check_struct_seq_match(struct, seq):
+    """
+    Returns whether IUPAC sequence *seq* can form structure *struct*.
+    """
+    for bp_pos_i, bp_pos_j in struct.bp_positions:
+        if not valid_bp(seq[bp_pos_i], seq[bp_pos_j]):
+            for bp_i, bp_j in BASEPAIRS:
+                if (base_valid_IUPAC(getattr(IUPAC_Id, seq[bp_pos_i]),
+                                     bp_i) and
+                    base_valid_IUPAC(getattr(IUPAC_Id, seq[bp_pos_j]), bp_j)):
+                    return
+            raise ValueError("Structure and sequence do not match")
+
+
 class Structure(object):
     """RNA structure representation."""
 

@@ -34,21 +34,6 @@ def enum(*sequential, **named):
     return type('Enum', (), enums)
 
 
-def check_struct_seq_match(struct, seq):
-    """
-    Returns whether IUPAC sequence *seq* can form structure *struct*.
-    """
-    for bp_pos_i, bp_pos_j in struct.bp_positions:
-        if not rna.valid_bp(seq[bp_pos_i], seq[bp_pos_j]):
-            for bp_i, bp_j in rna.BASEPAIRS:
-                if (rna.base_valid_IUPAC(
-                        getattr(rna.IUPAC_Id, seq[bp_pos_i]), bp_i) and
-                    rna.base_valid_IUPAC(
-                        getattr(rna.IUPAC_Id, seq[bp_pos_j]), bp_j)):
-                    return
-            raise ValueError("Structure and sequence do not match")
-
-
 def max_sum(*l):
     """
     Sums up the committed parameters. Returns *MAX_FLOAT* if one of the

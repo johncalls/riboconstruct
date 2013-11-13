@@ -200,8 +200,8 @@ def local_search(start_seq_, target_structs_, seq_constraint_,
     global seq_constraint
     global target_structs
 
-    helper.check_struct_seq_match(target_structs_[0], start_seq_)
-    helper.check_struct_seq_match(target_structs_[1], start_seq_)
+    rna.check_struct_seq_match(target_structs_[0], start_seq_)
+    rna.check_struct_seq_match(target_structs_[1], start_seq_)
 
     start_seq = start_seq_
     target_structs = target_structs_
