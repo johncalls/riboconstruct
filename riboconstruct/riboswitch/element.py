@@ -6,7 +6,8 @@ from ..helper import enum
 
 State = enum("unbound", "bound", count=2)
 """
-Struct-like representation of the riboswitch states.
+Struct-like representation of the riboswitch states. (See
+:func:`riboconstruct.helper.enum` for details.)
 
 **unbound** = 0, **bound** = 1
 
@@ -30,16 +31,8 @@ State.get_str = types.MethodType(lambda _, state:
                                  State)
 
 
-class Type:
-    count = 7
-
-    (aptamer,
-     hairpin,
-     restriction_site,
-     context_front,
-     context_back,
-     seq,
-     access_constraint) = xrange(count)
+Type = enum("aptamer", "hairpin", "restriction_site", "context_front",
+            "context_back", "seq", "access_constraint", count=7)
 
 
 FUNCTIONAL_SITE_TYPES = set((Type.hairpin, Type.restriction_site))
