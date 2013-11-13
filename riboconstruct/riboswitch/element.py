@@ -1,17 +1,21 @@
+import types
+
 from .. import rna
+from ..helper import enum
 
 
-class State:
-    count = 2
+State = enum("unbound", "bound", count=2)
+"""
+Struct-like representation of the riboswitch states.
 
-    unbound, bound = xrange(count)
+**unbound** = 0, **bound** = 1
 
-    @staticmethod
-    def get_str(state):
-        if state == State.unbound:
-            return "ub"
-        else:
-            return "b"
+**count** = 2
+"""
+
+State.get_str = types.MethodType(lambda _, state:
+                                 state == State.unbound and "ub" or "b",
+                                 State)
 
 
 class Type:
