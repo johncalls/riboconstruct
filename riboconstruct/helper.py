@@ -14,6 +14,26 @@ MAX_FLOAT = 10000000.0
 MIN_FLOAT = -MAX_FLOAT
 
 
+def enum(*sequential, **named):
+    """
+    Helper function to construct C#-like enums.
+
+    Example: ::
+
+        >>> Numbers = enum('ZERO', 'One', five=5)
+        >>> Numbers.ZERO
+        0
+        >>> Numbers.five
+        5
+        >>> Numbers.ident[1]  # reverse mapping
+        'One'
+    """
+    enums = dict(zip(sequential, range(len(sequential))), **named)
+    reverse = dict((value, key) for key, value in enums.iteritems())
+    enums['ident'] = reverse
+    return type('Enum', (), enums)
+
+
 def check_struct_seq_match(struct, seq):
     """
     Returns whether IUPAC sequence *seq* can form structure *struct*.
