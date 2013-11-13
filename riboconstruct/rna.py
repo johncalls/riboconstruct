@@ -42,6 +42,16 @@ wildcard base matching the other bases. (See
 **UNSPEC** = 4
 
 **count** = 4 (number of *real* bases)
+
+Example: ::
+
+    >>> from riboconstruct import rna
+    >>> rna.BaseId.A
+    0
+    >>> rna.BaseId.UNSPEC  # unspecified base id
+    4
+    >>> print "Number of RNA bases:", rna.BaseId.count
+    Number of RNA bases: 4
 """
 
 
