@@ -59,13 +59,15 @@ IUPAC_Id = enum('A', 'C', 'G', 'U', 'N', 'R', 'Y', 'S', 'W', 'K', 'M', 'B',
                 'D', 'H', 'V', count=15)
 """
 Struct-like representation of RNA bases in IUPAC format as id.
-(Compare to riboconstruct.rna.BaseId)
+(Compare to riboconstruct.rna.BaseId. See
+:func:`riboconstruct.helper.enum` for details.)
 """
 
 
 BasepairId = enum('AU', 'CG', 'GC', 'GU', 'UA', 'UG', count=6)
 """
-Struct-like representation of RNA basepairs as id.
+Struct-like representation of RNA basepairs as id. (See
+:func:`riboconstruct.helper.enum` for details.)
 
 (**A**-**U**) = 0,
 (**C**-**G**) = 1,
@@ -79,6 +81,19 @@ Struct-like representation of RNA basepairs as id.
 
 StructType = enum("INTERIOR", "BULGE", "HAIRPIN", "STACKING", "MULTILOOP",
                   "EXTERIOR", count=6)
+"""
+Struct-like representation of RNA structural elements as id. (See
+:func:`riboconstruct.helper.enum` for details.)
+
+**INTERIOR** = 0,
+**BULGE** = 1,
+**HAIRPIN** = 2,
+**STACKING** = 3,
+**MULTILOOP** = 4,
+**EXTERIOR** = 5
+
+**count** = 6
+"""
 
 
 def valid_bp_b_ids(b_id_i, b_id_j):
