@@ -45,11 +45,12 @@ wildcard base matching the other bases. (See
 """
 
 
-class IUPAC_Id:
-    """Struct-like representation of RNA bases in IUPAC format as id."""
-    count = len(IUPAC)
-
-    A, C, G, U, N, R, Y, S, W, K, M, B, D, H, V = xrange(count)
+IUPAC_Id = enum('A', 'C', 'G', 'U', 'N', 'R', 'Y', 'S', 'W', 'K', 'M', 'B',
+                'D', 'H', 'V', count=15)
+"""
+Struct-like representation of RNA bases in IUPAC format as id.
+(Compare to riboconstruct.rna.BaseId)
+"""
 
 
 class BasepairId:
