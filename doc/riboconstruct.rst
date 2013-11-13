@@ -13,6 +13,7 @@ rna
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
 
 helper
 ^^^^^^
@@ -21,3 +22,4 @@ helper
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource

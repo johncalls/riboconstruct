@@ -5,18 +5,11 @@ riboconstruct.riboswitch package
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
 
 
 Submodules
 ----------
-
-riboswitch
-^^^^^^^^^^
-
-.. automodule:: riboconstruct.riboswitch.riboswitch
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 element
 ^^^^^^^
@@ -33,6 +26,7 @@ generator
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
 
 siblings_generator
 ^^^^^^^^^^^^^^^^^^
@@ -41,6 +35,7 @@ siblings_generator
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
 
 siblings_generator_2
 ^^^^^^^^^^^^^^^^^^^^
@@ -49,3 +44,4 @@ siblings_generator_2
     :members:
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
