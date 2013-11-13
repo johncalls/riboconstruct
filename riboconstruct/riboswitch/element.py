@@ -33,6 +33,18 @@ State.get_str = types.MethodType(lambda _, state:
 
 Type = enum("aptamer", "hairpin", "restriction_site", "context_front",
             "context_back", "seq", "access_constraint", count=7)
+"""
+Struct-like representation of the riboswitch element types. (See
+:func:`riboconstruct.helper.enum` for details.)
+
+**aptamer** = 0,
+**hairpin** = 1,
+**restriction_site** = 2,
+**context_front** = 3,
+**context_back** = 4,
+**seq** = 5,
+**access_constraint** = 6
+"""
 
 
 FUNCTIONAL_SITE_TYPES = set((Type.hairpin, Type.restriction_site))
