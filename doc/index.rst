@@ -18,7 +18,7 @@ To generate and evaluate riboswitches the following subpackage can be used:
 
 * :mod:`riboconstruct.eval_mp` provides methods to generate and evaluate a riboswitch model within given constraints. The methods are based on Python's :mod:`multiprocessing` and can be used to do the calculations on a `multiprocessing system`_ in parallel.
 
-Besides, :mod:`riboconstruct` offers helper classes and functions e.g. to represent RNA structures or sequences:
+In addition, :mod:`riboconstruct` offers helper classes and functions e.g. to represent RNA structures or sequences:
   
 * :mod:`riboconstruct.rna`
 * :mod:`riboconstruct.helper`
