@@ -77,22 +77,8 @@ Struct-like representation of RNA basepairs as id.
 **count** = 6
 """
 
-
-class StructType:
-    """
-    Struct-like representation of the different structural elements of
-    a RNA structure.
-
-    **INTERIOR** = 0,
-    **BULGE** = 1,
-    **HAIRPIN** = 2,
-    **STACKING** = 3,
-    **MULTILOOP** = 4,
-    **EXTERIOR** = 5
-    """
-    count = 6
-
-    INTERIOR, BULGE, HAIRPIN, STACKING, MULTILOOP, EXTERIOR = xrange(count)
+StructType = enum("INTERIOR", "BULGE", "HAIRPIN", "STACKING", "MULTILOOP",
+                  "EXTERIOR", count=6)
 
 
 def valid_bp_b_ids(b_id_i, b_id_j):
