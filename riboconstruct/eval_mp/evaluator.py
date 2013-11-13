@@ -6,8 +6,8 @@ from . import settings
 from .. import main
 from .. import helper
 from .. import params
+from .. import riboswitch as rs
 from .. import rna_f
-from ..riboswitch import riboswitch as rs
 from ..riboswitch import element as rs_e
 
 

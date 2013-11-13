@@ -1,8 +1,8 @@
 import collections
 
-from . import riboswitch as rs
 from . import element as rs_e
 
+from .. import riboswitch as rs
 from .. import rna
 
 

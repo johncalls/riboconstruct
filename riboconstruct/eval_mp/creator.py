@@ -5,7 +5,7 @@ import os
 import os.path
 
 from . import settings
-from ..riboswitch import riboswitch as rs
+from .. import riboswitch as rs
 from ..riboswitch import siblings_generator_2 as sg
 
 

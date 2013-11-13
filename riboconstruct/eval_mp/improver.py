@@ -2,11 +2,11 @@ import multiprocessing as mp
 import os.path
 
 from . import settings
+from .. import riboswitch as rs
 from .. import rna
 from ..inverse_folding import structure
 from ..inverse_folding import two_target_inverse_fold as inverse_fold
 from ..inverse_folding import two_target_local_refinement as loc_ref
-from ..riboswitch import riboswitch as rs
 
 
 class Loader(mp.Process):

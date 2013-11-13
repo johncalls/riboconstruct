@@ -7,10 +7,10 @@ import shutil
 
 from . import helper
 from . import params
+from . import riboswitch as rs
 
 from .inverse_folding import two_target_inverse_fold as inverse_fold
 
-from .riboswitch import riboswitch as rs
 from .riboswitch import element as rs_e
 from .riboswitch import siblings_generator as sg
 
