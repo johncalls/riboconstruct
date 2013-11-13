@@ -11,6 +11,18 @@ Struct-like representation of the riboswitch states.
 **unbound** = 0, **bound** = 1
 
 **count** = 2
+
+.. function:: get_str(state)
+
+    Returns the string representation (``ub``, ``b``) of a certain
+    state.
+
+Example: ::
+
+    >>> from riboconstruct.riboswitch import element
+    >>> state = element.State.unbound
+    >>> element.State.get_str(state)
+    'ub'
 """
 
 State.get_str = types.MethodType(lambda _, state:
