@@ -8,7 +8,7 @@ class Structure(rna.Structure):
         # omit unnecessary checks
         if isinstance(struct, rna.Structure):
             self.struct = struct.struct
-            self.basepairs = struct.basepairs
+            self._basepairs = struct.basepairs
             self.__bp_positions = struct.bp_positions
         else:
             super(Structure, self).__init__(struct)
