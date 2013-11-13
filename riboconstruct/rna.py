@@ -63,20 +63,19 @@ Struct-like representation of RNA bases in IUPAC format as id.
 """
 
 
-class BasepairId:
-    """
-    Struct-like representation of RNA basepairs as id.
+BasepairId = enum('AU', 'CG', 'GC', 'GU', 'UA', 'UG', count=6)
+"""
+Struct-like representation of RNA basepairs as id.
 
-    (**A**-**U**) = 0,
-    (**C**-**G**) = 1,
-    (**G**-**C**) = 2,
-    (**G**-**U**) = 3,
-    (**U**-**A**) = 4,
-    (**U**-**G**) = 5
-    """
-    count = len(BASEPAIRS)
+(**A**-**U**) = 0,
+(**C**-**G**) = 1,
+(**G**-**C**) = 2,
+(**G**-**U**) = 3,
+(**U**-**A**) = 4,
+(**U**-**G**) = 5
 
-    AU, CG, GC, GU, UA, UG = xrange(count)
+**count** = 6
+"""
 
 
 class StructType:
