@@ -9,7 +9,7 @@ def iter_riboswitch(config):
     Yields the parsed riboswitch elements that are encoded in *config*
     in a FASTA-like format.
 
-    Example: ::
+    Example riboswitch in FASTA-like format: ::
 
         >Aptamer|38,103|bound
         ((((((((((........(((((....)))))..(((((...........)))))))))))))))
@@ -31,6 +31,17 @@ def iter_riboswitch(config):
         >Context_back|103,148
         .............................................
         AUCUAGCGCUGGUACCAUCCCAUUUAACUGUAAGAAGAAUUGCAC
+
+    Read file: ::
+
+        >>> from riboconstruct.riboswitch import iter_riboswitch
+        >>> with open("example_file") as config:
+        ...     for element in iter_riboswitch(config):
+        ...             print element
+
+    :func:`get_riboswitch_from_config_file` can be used to read a
+    FASTA-like riboswitch file and return a
+    :class:`riboconstruct.riboswitch.riboswitch.Riboswitch`
     """
     def next():
         seq = config_iter.next().strip()
@@ -117,7 +128,7 @@ def iter_riboswitch(config):
 def get_riboswitch_from_config_file(config_file):
     """
     Returns a riboswitch instance by parsing the elements from a
-    FASTA-like format using :func:`riboconstruct.helper.iter_riboswitch`.
+    FASTA-like format using :func:`iter_riboswitch`.
     """
     riboswitch = rs.Riboswitch()
     # read initial settings from config
