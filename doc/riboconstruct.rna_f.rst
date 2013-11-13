@@ -22,13 +22,7 @@ The module provides methods to evaluate the switching behaviour of riboswitches 
   3. Execute ``make`` in the same subdirectory
 
 
-Submodules
-----------
-
-wrap
-^^^^
-
-.. automodule:: riboconstruct.rna_f.wrap
+.. autoclass:: riboconstruct.rna_f.RNAf
     :members:
     :undoc-members:
     :show-inheritance:
