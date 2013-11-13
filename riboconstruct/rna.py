@@ -1,5 +1,7 @@
 import re
 
+from .helper import enum
+
 # Boltzmann gas constant in kcal/mol
 RT = 0.616
 # Penalty for hairpin of size 3 consisting only of C's
@@ -25,21 +27,22 @@ BASEPAIRS = ((0, 3), (1, 2), (2, 1), (2, 3), (3, 0), (3, 2))
 STRUCT_ELEM_UNSPEC = '.'
 
 
-class BaseId:
-    """
-    Struct-like representation of RNA bases as id, plus an additional
-    wildcard base matching the other bases.
+BaseId = enum('A', 'C', 'G', 'U', 'N', UNSPEC=4, count=4)
+"""
+Struct-like representation of RNA bases as id, plus an additional
+wildcard base matching the other bases. (See
+:func:`riboconstruct.helper.enum` for details.)
 
-    **A** = 0,
-    **C** = 1,
-    **G** = 2,
-    **U** = 3,
-    **N** = 4
-    """
-    count = len(BASES) - 1
+**A** = 0,
+**C** = 1,
+**G** = 2,
+**U** = 3,
+**N** = 4
 
-    A, C, G, U = xrange(count)
-    UNSPEC = len(BASES) - 1
+**UNSPEC** = 4
+
+**count** = 4 (number of *real* bases)
+"""
 
 
 class IUPAC_Id:
