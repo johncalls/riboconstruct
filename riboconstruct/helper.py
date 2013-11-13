@@ -6,8 +6,6 @@ import sys
 import tempfile
 import time
 
-from . import rna
-
 
 CMP_THR = 0.00000001
 MAX_FLOAT = 10000000.0
