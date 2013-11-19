@@ -153,22 +153,27 @@ class InstanceSpace(object):
         sequence of element *b* in the current instance.
         """
         def seq_overlapping(struct_pos_i, struct_pos_j, seq_pos):
-            return seq_pos[0] <= struct_pos_i and seq_pos[1] >= struct_pos_j
+            # NOTE: seq_pos[1] has to be '>' since it's index is +1 (the 2nd
+            #       index of riboswitch elements is always +1)
+            return seq_pos[0] <= struct_pos_i and seq_pos[1] > struct_pos_j
 
+        if not self._overlapping(ident_a, ident_b):
+            return True
         a = self._elements[ident_a]
         b = self._elements[ident_b]
-        if not self._overlapping(a, b):
-            return True
-        a_i = a.pos[0]
-        b_i = b.pos[0]
+        a_start = a.pos[0]
+        b_start = b.pos[0]
         for bp_id, (bp_pos_i, bp_pos_j) in enumerate(a.struct.bp_positions):
-            bp_pos_i += a_i
-            bp_pos_j += a_i
-            # here it is assured that in each step b_start is <= bp_pos_i
+            bp_pos_i += a_start  # get 'global' index
+            bp_pos_j += a_start  # get 'global' index
+            # here it is assured that the structure and sequence overlap for
+            # the current bp
             if not seq_overlapping(bp_pos_i, bp_pos_j, b.pos):
                 return True
-            base_i = b.seq[bp_pos_i - b_i]
-            base_j = b.seq[bp_pos_j - b_i]
+            # get the bases from b.seq that match the positions of the bp
+            base_i = b.seq[bp_pos_i - b_start]
+            base_j = b.seq[bp_pos_j - b_start]
+            # check whether these bases can in fact form a valid bp
             if not rna.valid_bp(base_i, base_j):
                 return False
 
