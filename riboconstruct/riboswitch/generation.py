@@ -11,6 +11,11 @@ PATTERN_FILE_NAME = "pattern.p"
 
 
 def write_to_file(file_, *out):
+    """
+    Writes a variable number of function arguments to *file_*.
+
+    Raises an :exc:`~exceptions.IOError` if *file_* exists.
+    """
     if os.path.isfile(file_):
         raise IOError("File '%s' already exists." % file_)
     with open(file_, 'w') as f:
@@ -44,7 +49,7 @@ class InstanceSpace(object):
         Validates the riboswitch *instance* according to the defined
         constraints.
 
-        Overwrite this method in the specific ``InstanceSpace``
+        Overwrite this method in the specific :class:`InstanceSpace`
         subclass, if the validation defined in this method is not
         sufficient.
         """
@@ -59,7 +64,7 @@ class InstanceSpace(object):
         Rearranges the elements of the riboswitch *instance* such that
         they are accessible by an unique identifier.
 
-        Overwrite this method in the specific ``InstanceSpace``
+        Overwrite this method in the specific :class:`InstanceSpace`
         subclass, if the identifiers defined in this method are not
         sufficient.
         """
@@ -91,7 +96,7 @@ class InstanceSpace(object):
         riboswitch *instance*.
 
         The functionality has to be defined in the specific
-        ``InstanceSpace`` subclass.
+        :class:`InstanceSpace` subclass.
         """
         raise NotImplementedError
 
