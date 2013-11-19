@@ -6,8 +6,8 @@
 #  and has to be configured (and installed).
 
 VIENNA_RNA      = /usr/local
-RNA_F           = /home/john/Desktop/riboconstruct/rnaf
-INSTALL_DIR     = /home/john/Desktop/riboconstruct/riboconstruct/rna_f
+RNA_F           = /home/john/projects/riboswitch_construction/riboconstruct_git/rnaf 
+INSTALL_DIR     = /home/john/projects/riboswitch_construction/riboconstruct_git/riboconstruct/rna_f
 
 ################################################################################
 
