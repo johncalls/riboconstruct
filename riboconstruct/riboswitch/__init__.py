@@ -162,7 +162,7 @@ def get_riboswitch_from_str(riboswitch_str):
 
     # first two elements are the positions
     positions = elements_iter.next().split(', ')
-    riboswitch.pos_instance = [int(positions[0][1:]), int(positions[1][:-1])]
+    riboswitch.pos = [int(positions[0][1:]), int(positions[1][:-1])]
     positions = elements_iter.next().split(', ')
     riboswitch.pos_riboswitch = [int(positions[0][1:]), int(positions[1][:-1])]
 
@@ -267,7 +267,7 @@ class Riboswitch(object):
 
         maxint = sys.maxint
         minint = -maxint - 1
-        self.pos_instance = [maxint, minint]
+        self.pos = [maxint, minint]
         self.pos_riboswitch = [maxint, minint]
 
     def __hash__(self):
@@ -296,7 +296,7 @@ class Riboswitch(object):
         except AttributeError:
             sorted_elements = sorted(self.elements,
                                      key=lambda e: (e.type, e.state, e.pos))
-            self._str = (repr(self.pos_instance) + ';' +
+            self._str = (repr(self.pos) + ';' +
                          repr(self.pos_riboswitch) + ';' +
                          ';'.join(repr(e) for e in sorted_elements))
             return self._str
@@ -309,7 +309,7 @@ class Riboswitch(object):
         new._elements = (
             list(list(element)
                  for element in self._elements))
-        new.pos_instance = copy.deepcopy(self.pos_instance)
+        new.pos = copy.deepcopy(self.pos)
         new.pos_riboswitch = copy.deepcopy(self.pos_riboswitch)
         return new
 
@@ -321,18 +321,18 @@ class Riboswitch(object):
         self.elements.add(element)
         # check the positions of the riboswitch instance
         if element.type == rs_e.Type.context_front:
-            self.pos_instance[0] = element.pos[0]
+            self.pos[0] = element.pos[0]
         elif element.type == rs_e.Type.context_back:
-            self.pos_instance[1] = element.pos[1]
+            self.pos[1] = element.pos[1]
         elif element.type == rs_e.Type.aptamer:
-            if element.pos[1] > self.pos_instance[1]:
-                self.pos_instance[1] = element.pos[1]
+            if element.pos[1] > self.pos[1]:
+                self.pos[1] = element.pos[1]
                 self.pos_riboswitch[1] = element.pos[1]
             elif element.pos[1] > self.pos_riboswitch[1]:
                 self.pos_riboswitch[1] = element.pos[1]
         else:  # hairpin, seq_constraint, access_constraint, target_site
-            if element.pos[0] < self.pos_instance[0]:
-                self.pos_instance[0] = element.pos[0]
+            if element.pos[0] < self.pos[0]:
+                self.pos[0] = element.pos[0]
                 self.pos_riboswitch[0] = element.pos[0]
             elif element.pos[0] < self.pos_riboswitch[0]:
                 self.pos_riboswitch[0] = element.pos[0]
@@ -376,7 +376,7 @@ class Riboswitch(object):
         sequential constraint defined by the riboswitch's elements plus
         the sequential constraints of its contexts.
         """
-        return get_constraints(self.pos_instance, self.elements)
+        return get_constraints(self.pos, self.elements)
 
     def get_constraints_riboswitch(self):
         """

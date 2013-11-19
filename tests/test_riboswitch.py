@@ -47,7 +47,7 @@ class TestRiboswitch(unittest.TestCase):
         self.riboswitch.add(self.a_ub)
         self.riboswitch.add(self.a_b)
 
-        self.assertEqual([6, 25], self.riboswitch.pos_instance)
+        self.assertEqual([6, 25], self.riboswitch.pos)
         self.assertEqual([6, 25], self.riboswitch.pos_riboswitch)
 
         (struct_ub, struct_b), seq = self.riboswitch.get_constraints()
@@ -70,7 +70,7 @@ class TestRiboswitch(unittest.TestCase):
         self.riboswitch.add(self.a_ub)
         self.riboswitch.add(self.a_b)
 
-        self.assertEqual([1, 32], self.riboswitch.pos_instance)
+        self.assertEqual([1, 32], self.riboswitch.pos)
         self.assertEqual([6, 25], self.riboswitch.pos_riboswitch)
 
         (struct_ub, struct_b), seq = self.riboswitch.get_constraints()
