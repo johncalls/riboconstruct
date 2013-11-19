@@ -83,7 +83,7 @@ def evaluate_riboswitch(riboswitch_id, riboswitch, parent_folder):
     for seq_id, (sequence, cost, steps) in enumerate(seqs_info):
         sequence = str(sequence)
         # set the expression platform sequence
-        ep_seq = rs_e.SequenceConstraint(riboswitch.pos_functional_site,
+        ep_seq = rs_e.SequenceConstraint(riboswitch.pos_instance,
                                          sequence)
         riboswitch.add(ep_seq)
         # evaluate

@@ -102,7 +102,7 @@ class SimpleSiblingsGenerator(object):
         if not new_pos[1] > self.hairpins[rs_e.State.bound].pos[0]:
             return False
         # the size of the expression platform is bound to a maximum value
-        pos = self.parent.pos_functional_site
+        pos = self.parent.pos_instance
         return pos[1] - pos[0] < rs.FUNCTIONAL_SITE_MAX_LENGTH
 
     def valid_decrease_ep(self):

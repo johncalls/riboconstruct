@@ -70,18 +70,19 @@ class InstanceSpace(object):
         self._current_instance = instance
         self._elements = dict()
         # rearrange riboswitch elements by their identifiers
-        for element in instance._elements:
+        print instance.elements
+        for element in instance.elements:
             if element.state is None:
                 ident = str(element.ident)
             else:
                 ident = "%s_%s" % (element.ident, element.state)
             self._elements[ident] = element
         # if there are no context elements, add dummies
-        if rs_e.ContextFront.ident not in self._elements:
+        if rs_e.ContextFront.ident not in instance.elements:
             pos = (instance.pos_instance[0], instance.pos_riboswitch[0])
             cf = rs_e.ContextFront(pos, ())
             self._elements[cf.ident] = cf
-        if rs_e.ContextBack.ident not in self._elements:
+        if rs_e.ContextBack.ident not in instance.elements:
             pos = (instance.pos_riboswitch[1], instance.pos_instance[1])
             cb = rs_e.ContextBack(pos, ())
             self._elements[cb.ident] = cb

@@ -42,7 +42,7 @@ class SimpleSiblingsGenerator(object):
             if self.valid_fs_shift_down():
                 sibling = self.parent.copy()
                 sibling.pos[0] -= 1
-                sibling.pos_functional_site[0] = sibling.pos[0]
+                sibling.pos_instance[0] = sibling.pos[0]
                 sibling.pos_riboswitch[0] = sibling.pos[0]
                 yield sibling
 
@@ -50,7 +50,7 @@ class SimpleSiblingsGenerator(object):
             if self.valid_fs_shift_up():
                 sibling = self.parent.copy()
                 sibling.pos[0] += 1
-                sibling.pos_functional_site[0] = sibling.pos[0]
+                sibling.pos_instance[0] = sibling.pos[0]
                 sibling.pos_riboswitch[0] = sibling.pos[0]
                 yield sibling
 
@@ -134,7 +134,7 @@ class SimpleSiblingsGenerator(object):
         # check intersections with the context front (if available) or the size
         # of the functional site
         if self.context_front is None:
-            return self.parent.pos_functional_site[0] < pos[0]
+            return self.parent.pos_instance[0] < pos[0]
         else:
             return self.context_front.pos[1] < pos[0]
 
@@ -198,7 +198,7 @@ class SimpleSiblingsGenerator(object):
         # increase the functional site to an invalid size
         if self.context_front is None:
             return (
-                pos[0] > self.parent.pos_functional_site[0] and
+                pos[0] > self.parent.pos_instance[0] and
                 new_pos[1] > self.hairpins[rs_e.State.bound].pos[0])
         else:
             return (
@@ -216,11 +216,11 @@ class SimpleSiblingsGenerator(object):
         return True
 
     def valid_cf_shift_down(self):
-        pos = self.parent.pos_functional_site
+        pos = self.parent.pos_instance
         return pos[1] - pos[0] < rs.FUNCTIONAL_SITE_MAX_LENGTH
 
     def valid_fs_shift_up(self):
-        pos_start = self.parent.pos_functional_site[0]
+        pos_start = self.parent.pos_instance[0]
         if pos_start >= self.restriction_site.pos[0]:
             return False
         for hairpin in self.hairpins:
@@ -230,7 +230,7 @@ class SimpleSiblingsGenerator(object):
         return True
 
     def valid_fs_shift_down(self):
-        pos = self.parent.pos_functional_site
+        pos = self.parent.pos_instance
         return pos[1] - pos[0] < rs.FUNCTIONAL_SITE_MAX_LENGTH
 
     # used to check if either a new h_pos or rs_pos prevents the hairpin from

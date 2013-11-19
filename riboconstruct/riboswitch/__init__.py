@@ -256,9 +256,9 @@ def get_riboswitch_from_str(riboswitch_str):
                 riboswitch.add(rs_e.Aptamer(state, pos, struct, seq))
             elif type_ == "H":
                 riboswitch.add(rs_e.Hairpin(state, pos, struct))
-    if not len(riboswitch.elements[rs_e.Type.context_front]):
+    if not len(riboswitch._elements[rs_e.Type.context_front]):
         pos = eval(rs_es[0].split('=')[1])
-        riboswitch.pos_functional_site = pos
+        riboswitch.pos_instance = pos
         riboswitch.pos[0] = riboswitch.pos_riboswitch[0] = pos[0]
     return riboswitch
 
@@ -269,26 +269,24 @@ def get_riboswitch_from_str(riboswitch_str):
 
 class Riboswitch(object):
     def __init__(self):
+        self.elements = set()
         self._elements = [[] for _ in xrange(rs_e.Type.count)]
 
-        minint = -sys.maxint - 1
-        self.pos = [sys.maxint, minint]
-        self.pos_functional_site = [sys.maxint, minint]
-        self.pos_riboswitch = [sys.maxint, minint]
-
-    @property
-    def elements(self):
-        return list()
+        maxint = sys.maxint
+        minint = -maxint - 1
+        self.pos = [maxint, minint]
+        self.pos_instance = [maxint, minint]
+        self.pos_riboswitch = [maxint, minint]
 
     def __hash__(self):
         try:
             return self.__hash
         except AttributeError:
-            # start = self.pos_functional_site[0]
+            # start = self.pos_instance[0]
             # restr_site = (
             #     self._elements[rs_e.Type.restriction_site][0])
             # # consider the length of the functional site
-            # self.__hash = self.pos_functional_site[1] - start
+            # self.__hash = self.pos_instance[1] - start
             # # consider each hairpin
             # for hairpin in sorted(self._elements[rs_e.Type.hairpin],
             #                       key=lambda h: (h.state, h.pos)):
@@ -329,13 +327,14 @@ class Riboswitch(object):
     def copy(self):
         new = copy.copy(self)
 
-        new.elements = (
+        new._elements = (
             list(list(element)
                  for element in self._elements))
+        new.elements = set(self.elements)
 
         new.pos = list(self.pos)
         new.pos_riboswitch = list(self.pos_riboswitch)
-        new.pos_functional_site = list(self.pos_functional_site)
+        new.pos_instance = list(self.pos_instance)
 
         new.reset_hash()
         return new
@@ -343,6 +342,7 @@ class Riboswitch(object):
     def add(self, rs_elem):
         # add the riboswitch element
         self._elements[rs_elem.type].append(rs_elem)
+        self.elements.add(rs_elem)
 
         # set start and end position (without context they equal start and end
         # position of the riboswitch)
@@ -358,29 +358,29 @@ class Riboswitch(object):
         if rs_elem.type in rs_e.FUNCTIONAL_SITE_TYPES:
             # reset the hash since it is not valid any more
             self.reset_hash()
-            if rs_elem.pos[0] < self.pos_functional_site[0]:
-                if rs_elem.pos[1] > self.pos_functional_site[1]:
-                    self.pos_functional_site = list(rs_elem.pos)
+            if rs_elem.pos[0] < self.pos_instance[0]:
+                if rs_elem.pos[1] > self.pos_instance[1]:
+                    self.pos_instance = list(rs_elem.pos)
                 else:
-                    self.pos_functional_site[0] = rs_elem.pos[0]
+                    self.pos_instance[0] = rs_elem.pos[0]
                 self.pos_riboswitch[0] = rs_elem.pos[0]
-            elif rs_elem.pos[1] > self.pos_functional_site[1]:
-                self.pos_functional_site[1] = rs_elem.pos[1]
+            elif rs_elem.pos[1] > self.pos_instance[1]:
+                self.pos_instance[1] = rs_elem.pos[1]
         elif rs_elem.type == rs_e.Type.aptamer:
             if rs_elem.pos[1] > self.pos_riboswitch[1]:
                 self.pos_riboswitch[1] = rs_elem.pos[1]
-            if rs_elem.pos[0] > self.pos_functional_site[1]:
-                self.pos_functional_site[1] = rs_elem.pos[0]
+            if rs_elem.pos[0] > self.pos_instance[1]:
+                self.pos_instance[1] = rs_elem.pos[0]
         elif rs_elem.type == rs_e.Type.context_front:
-            if rs_elem.pos[1] < self.pos_functional_site[0]:
-                self.pos_functional_site[0] = rs_elem.pos[1]
+            if rs_elem.pos[1] < self.pos_instance[0]:
+                self.pos_instance[0] = rs_elem.pos[1]
                 self.pos_riboswitch[0] = rs_elem.pos[1]
         elif rs_elem.type == rs_e.Type.context_back:
             if rs_elem.pos[0] > self.pos_riboswitch[1]:
                 self.pos_riboswitch[1] = rs_elem.pos[0]
 
         # TODO: remove later
-        assert(self.pos_riboswitch[0] == self.pos_functional_site[0])
+        assert(self.pos_riboswitch[0] == self.pos_instance[0])
 
     def replace(self, old_rs_elem, new_rs_elem):
         self.remove(old_rs_elem)
@@ -421,8 +421,8 @@ class Riboswitch(object):
         ### generate the RNAf evaluation files #################################
 
         structs, seq = self.get_constraints_riboswitch()
-        len_functional_site = (self.pos_functional_site[1] -
-                               self.pos_functional_site[0])
+        len_functional_site = (self.pos_instance[1] -
+                               self.pos_instance[0])
 
         # hairpin
         patterns_h = ["", ""]
@@ -466,7 +466,7 @@ class Riboswitch(object):
         # restriction site
         rs = self._elements[rs_e.Type.restriction_site][0]
         ident = "RS"
-        start_pos_fs = self.pos_functional_site[0]
+        start_pos_fs = self.pos_instance[0]
         # NOTE: +1 because of different index counting
         pos_i = rs.pos[0] - start_pos_fs + 1 + 3  # HACK: the last omits the ATG/AUG at the start
         pos_j = rs.pos[1] - start_pos_fs
@@ -601,7 +601,7 @@ class Riboswitch(object):
                     self._elements[rs_e.Type.restriction_site],
                     self._elements[rs_e.Type.seq]))
 
-        return get_constraints(self.pos_functional_site, func_site_elements)
+        return get_constraints(self.pos_instance, func_site_elements)
 
     def get_constraints_riboswitch(self):
         riboswitch_elements = (
@@ -618,7 +618,7 @@ class Riboswitch(object):
         except AttributeError:
             info = []
 
-            info.append("pos_fs=%s" % str(tuple(self.pos_functional_site)))
+            info.append("pos_fs=%s" % str(tuple(self.pos_instance)))
 
             try:
                 cf = self._elements[rs_e.Type.context_front][0]
@@ -658,7 +658,7 @@ class Riboswitch(object):
 
     def get_full_info(self):
         info = []
-        # start = self.pos_functional_site[0]
+        # start = self.pos_instance[0]
         start = self.pos[0]
 
         (struct_0, struct_1), seq = self.get_constraints_riboswitch()
@@ -752,7 +752,7 @@ class Riboswitch(object):
                          rs_elem_b, rs_elem_b.pos[0], rs_elem_b.pos[1]))
 
         ### validate length of the functional site #############################
-        size = self.pos_functional_site[1] - self.pos_functional_site[0]
+        size = self.pos_instance[1] - self.pos_instance[0]
         if size > FUNCTIONAL_SITE_MAX_LENGTH:
             raise ValueError(
                 "Functional site exceeds maximal length of the functional "
