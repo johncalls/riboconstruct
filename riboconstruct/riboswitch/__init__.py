@@ -84,7 +84,7 @@ def iter_riboswitch(config):
                 if pos[1] - pos[0] != len(struct):
                     raise ValueError("Hairpin element has wrong size.")
                 yield rs_e.Hairpin(state, pos, struct)
-            elif re_type == rs_e.Type.restriction_site:
+            elif re_type == rs_e.Type.target_site:
                 seq = rna.IUPACSequence(line.upper())
                 if pos[1] - pos[0] != len(seq):
                     raise ValueError("Restriction site element has wrong size.")
@@ -99,18 +99,14 @@ def iter_riboswitch(config):
                 if pos[1] - pos[0] != len(seq):
                     raise ValueError("Context back element has wrong size.")
                 yield rs_e.ContextBack(pos, seq)
-            elif re_type == rs_e.Type.seq:
+            elif re_type == rs_e.Type.seq_constraint:
                 seq = rna.IUPACSequence(line.upper())
                 if pos[1] - pos[0] != len(seq):
                     raise ValueError("Sequence constraint element has wrong "
                                      "size.")
                 yield rs_e.Sequence(pos, seq)
             elif re_type == rs_e.Type.access_constraint:
-                seq = rna.IUPACSequence(line.upper())
-                if pos[1] - pos[0] != len(seq):
-                    raise ValueError(
-                        "Access constraint element has wrong size.")
-                yield rs_e.AccessConstraint(pos, seq)
+                yield rs_e.AccessConstraint(pos)
             else:
                 raise TypeError("Riboswitch config file contains invalid "
                                 "riboswitch element.")
@@ -141,7 +137,7 @@ import sys
 from .. import params
 
 
-FUNCTIONAL_SITE_MAX_LENGTH = 50
+EXPRESSION_PLATFORM_MAX_LEN = 50
 
 PATTERNS = [None, None]
 
@@ -160,6 +156,51 @@ PATTERNS[rs_e.State.unbound] = (
     "({}|%%s%%s#%%s%s%%s#%%s%%s|1)" % unichr(167).encode("utf-8"))
 
 PATTERNS = tuple(PATTERNS)
+
+
+def get_riboswitch_from_str(riboswitch_str):
+    """
+    Parse a riboswitch string representation and return the
+    corresponding riboswitch instance.
+    """
+    riboswitch = Riboswitch()
+    elements_iter = iter(riboswitch_str.split(';'))
+
+    # first two elements are the positions
+    # positions = elements_iter.next().split(', ')
+    # riboswitch.pos_instance = (int(positions[0][8:]), int(positions[1][:-1]))
+    positions = elements_iter.next().split(', ')
+    riboswitch.pos_riboswitch = [int(positions[0][8:]), int(positions[1][:-1])]
+
+    for element in elements_iter:
+        element = element[1:-1].split(' ')  # get rid of '(' and ')' and split
+        type_ = element[0].rsplit('_', 1)  # split type from state
+        try:
+            type_, state = type_
+        except ValueError:  # element has no state
+            type_ = type_[0]
+            pos = int(element[1][1:-1]), int(element[2][:-1])
+            seq = rna.Sequence(element[3][1:-1])
+            if type_ == rs_e.TargetSite.ident:
+                riboswitch.add(rs_e.TargetSite(pos, seq))
+            elif type_ == rs_e.ContextFront.ident:
+                riboswitch.add(rs_e.ContextFront(pos, seq))
+            elif type_ == rs_e.ContextBack.ident:
+                riboswitch.add(rs_e.ContextBack(pos, seq))
+            elif type_ == rs_e.AccessConstraint.ident:
+                riboswitch.add(rs_e.AccessConstraint(pos, seq))
+        else:  # element has a state
+            state = (rs_e.State.bound
+                     if state == rs_e.State.get_str(rs_e.State.bound)
+                     else rs_e.State.unbound)
+            pos = int(element[1][1:-1]), int(element[2][:-1])
+            struct = rna.Structure(element[3][1:-1])
+            if type_ == rs_e.Aptamer.ident:
+                seq = rna.Sequence(element[4][1:-1])
+                riboswitch.add(rs_e.Aptamer(state, pos, struct, seq))
+            elif type_ == rs_e.Hairpin.ident:
+                riboswitch.add(rs_e.Hairpin(state, pos, struct))
+    return riboswitch
 
 
 def get_constraints((start, end), riboswitch_elements):
@@ -189,8 +230,8 @@ def get_constraints((start, end), riboswitch_elements):
         rs_elem_end = rs_elem.pos[1] if rs_elem.pos[1] < end else end
         i, j = rs_elem_start - start, rs_elem_end - start
 
-        if (rs_elem.type == rs_e.Type.restriction_site or
-            rs_elem.type == rs_e.Type.seq):
+        if (rs_elem.type == rs_e.Type.target_site or
+            rs_elem.type == rs_e.Type.seq_constraint):
             for pos in xrange(i, j):
                 set_base(pos, rs_elem.seq[pos - i])
         elif rs_elem.type == rs_e.Type.hairpin:
@@ -210,50 +251,6 @@ def get_constraints((start, end), riboswitch_elements):
                 set_base(pos, rs_elem.seq[pos - i])
 
     return (''.join(structs[0]), ''.join(structs[1])), ''.join(seq)
-
-
-def get_riboswitch_from_str(riboswitch_str):
-    # TODO: consider using the 'ast' module instead of 'eval' (eval is bad!)
-    riboswitch = Riboswitch()
-    rs_es = riboswitch_str.split(';')
-    for rs_elem in rs_es[1:]:
-        rs_elem = rs_elem[1:-1].split(' ')  # get rid of '(' and ')' and split
-        type_ = rs_elem[0].split('_', 1)
-        try:
-            type_, state = type_
-        except ValueError:
-            type_ = type_[0]
-            pos = eval(rs_elem[1])
-            if type_ == "RS":
-                seq = rna.Sequence(eval(rs_elem[2]))
-                riboswitch.add(rs_e.TargetSite(pos, seq))
-            elif type_ == "Cf":
-                struct = rna.Structure(eval(rs_elem[2]))
-                seq = rna.Sequence(eval(rs_elem[3]))
-                riboswitch.add(rs_e.ContextFront(pos, seq))
-            elif type_ == "Cb":
-                struct = rna.Structure(eval(rs_elem[2]))
-                seq = rna.Sequence(eval(rs_elem[3]))
-                riboswitch.add(rs_e.ContextBack(pos, seq))
-            elif type_ == rs_e.AccessConstraint.ident:
-                seq = rna.Sequence(eval(rs_elem[2]))
-                riboswitch.add(rs_e.AccessConstraint(pos, seq))
-        else:
-            state = (rs_e.State.bound
-                     if state == "b"
-                     else rs_e.State.unbound)
-            pos = eval(rs_elem[1])
-            struct = rna.Structure(eval(rs_elem[2]))
-            if type_ == "A":
-                seq = rna.Sequence(eval(rs_elem[3]))
-                riboswitch.add(rs_e.Aptamer(state, pos, struct, seq))
-            elif type_ == "H":
-                riboswitch.add(rs_e.Hairpin(state, pos, struct))
-    if not len(riboswitch._elements[rs_e.Type.context_front]):
-        pos = eval(rs_es[0].split('=')[1])
-        riboswitch.pos_instance = pos
-        riboswitch.pos[0] = riboswitch.pos_riboswitch[0] = pos[0]
-    return riboswitch
 
 
 # INFO: the currenty riboswitch model only supports ONE hairpin loop (for each
@@ -276,8 +273,8 @@ class Riboswitch(object):
             return self.__hash
         except AttributeError:
             # start = self.pos_instance[0]
-            # restr_site = (
-            #     self._elements[rs_e.Type.restriction_site][0])
+            # target_site = (
+            #     self._elements[rs_e.Type.target_site][0])
             # # consider the length of the functional site
             # self.__hash = self.pos_instance[1] - start
             # # consider each hairpin
@@ -287,9 +284,9 @@ class Riboswitch(object):
             #         hash((hairpin.pos[0] - start, hairpin.pos[1] - start)))
             #     self.__hash ^= hash(str(hairpin.struct))
             #     self.__hash <<= hairpin.state
-            # # consider the pos of the restriction site
+            # # consider the pos of the target site
             # self.__hash ^= (
-            #     hash((restr_site.pos[0] - start, restr_site.pos[1] - start)))
+            #     hash((target_site.pos[0] - start, target_site.pos[1] - start)))
             # return self.__hash
             self.__hash = hash(str(self.get_raw_info()))
             return self.__hash
@@ -348,7 +345,7 @@ class Riboswitch(object):
             self.pos[1] = rs_elem.pos[1]
 
         # set positions of functional site and the hole riboswitch
-        if rs_elem.type in rs_e.FUNCTIONAL_SITE_TYPES:
+        if rs_elem.type in rs_e.EXPRESSION_PLATFORM_TYPES:
             # reset the hash since it is not valid any more
             self.reset_hash()
             if rs_elem.pos[0] < self.pos_instance[0]:
@@ -421,7 +418,7 @@ class Riboswitch(object):
         patterns_h = ["", ""]
         for hairpin in self._elements[rs_e.Type.hairpin]:
             state = hairpin.state
-            ident = "H_%s" % state_ident[state]
+            ident = "%s_%s" % (rs_e.Hairpin.ident, state_ident[state])
             patterns_h[state] = str(ident)
             struct = structs[state]
             # INFO: HACK!!!!!! fix: get_constraints_functional_site
@@ -440,7 +437,7 @@ class Riboswitch(object):
         patterns_a = ["", ""]
         for aptamer in self._elements[rs_e.Type.aptamer]:
             state = aptamer.state
-            ident = "A_%s" % state_ident[state]
+            ident = "%s_%s" % (rs_e.Aptamer.ident, state_ident[state])
             # INFO: HACK!!!
             if aptamer.state == rs_e.State.unbound:
                 # TODO: integrate 'has to be unbound' constraint
@@ -456,20 +453,21 @@ class Riboswitch(object):
                     folders[state], "%s.%s" % (ident, params.BB_FILE_EXT)),
                 ">%s" % ident, seq_, struct_, params.BB_TERMINATOR)
 
-        # restriction site
-        rs = self._elements[rs_e.Type.restriction_site][0]
-        ident = "RS"
+        # target site
+        rs = self._elements[rs_e.Type.target_site][0]
         start_pos_fs = self.pos_instance[0]
         # NOTE: +1 because of different index counting
         pos_i = rs.pos[0] - start_pos_fs + 1 + 3  # HACK: the last omits the ATG/AUG at the start
         pos_j = rs.pos[1] - start_pos_fs
         pattern_rs = "%c(%i,%i)" % (ord('%'), pos_i, pos_j)
-        header = ">%s" % ident
+        header = ">%s" % rs_e.TargetSite.ident
         write_to_file(
-            os.path.join(folders[0], "%s.%s" % (ident, params.BB_FILE_EXT)),
+            os.path.join(folders[0], "%s.%s" % (rs_e.TargetSite.ident,
+                                                params.BB_FILE_EXT)),
             header, rs.seq, params.BB_TERMINATOR)
         write_to_file(
-            os.path.join(folders[1], "%s.%s" % (ident, params.BB_FILE_EXT)),
+            os.path.join(folders[1], "%s.%s" % (rs_e.TargetSite.ident,
+                                                params.BB_FILE_EXT)),
             header, rs.seq, params.BB_TERMINATOR)
 
         # INFO: HACK! --> only one accessibility constraint expected which is
@@ -480,7 +478,6 @@ class Riboswitch(object):
         except IndexError:
             pattern_ac = ""
         else:
-            ident = "A_acc"
             aptamers = self._elements[rs_e.Type.aptamer]
             aptamer_ub = (aptamers[0]
                           if aptamers[0].state == rs_e.State.unbound
@@ -489,11 +486,12 @@ class Riboswitch(object):
             pos_i = ac.pos[0] - aptamer_ub.pos[0] + 1
             pos_j = ac.pos[1] - aptamer_ub.pos[0]
             pattern_ac = "%c(%i,%i)" % (ord('%'), pos_i, pos_j)
-            header = ">%s" % ident
+            header = ">%s" % rs_e.AccessConstraint.ident
             write_to_file(
                 os.path.join(
                     folders[rs_e.State.unbound],
-                    "%s.%s" % (ident, params.BB_FILE_EXT)),
+                    "%s.%s" % (rs_e.AccessConstraint.ident,
+                               params.BB_FILE_EXT)),
                 header, ac.seq)
 
         # context front (if existent)
@@ -502,14 +500,16 @@ class Riboswitch(object):
         except IndexError:
             pattern_cf = ""
         else:
-            ident = "Cf"
-            header = ">%s" % ident
-            pattern_cf = "%s%s" % (ident, unichr(167).encode("utf-8"))
+            header = ">%s" % rs_e.ContextFront.ident
+            pattern_cf = "%s%s" % (rs_e.ContextFront.ident,
+                                   unichr(167).encode("utf-8"))
             write_to_file(
-                os.path.join(folders[0], "%s.%s" % (ident, params.BB_FILE_EXT)),
+                os.path.join(folders[0], "%s.%s" % (rs_e.ContextFront.ident,
+                                                    params.BB_FILE_EXT)),
                 header, cf.seq, cf.struct, params.BB_TERMINATOR)
             write_to_file(
-                os.path.join(folders[1], "%s.%s" % (ident, params.BB_FILE_EXT)),
+                os.path.join(folders[1], "%s.%s" % (rs_e.ContextFront.ident,
+                                                    params.BB_FILE_EXT)),
                 header, cf.seq, cf.struct, params.BB_TERMINATOR)
 
         # context back (if existent)
@@ -518,14 +518,16 @@ class Riboswitch(object):
         except IndexError:
             pattern_cb = ""
         else:
-            ident = "Cb"
-            header = ">%s" % ident
-            pattern_cb = "%s%s" % (unichr(167).encode("utf-8"), ident)
+            header = ">%s" % rs_e.ContextBack.ident
+            pattern_cb = "%s%s" % (unichr(167).encode("utf-8"),
+                                   rs_e.ContextBack.ident)
             write_to_file(
-                os.path.join(folders[0], "%s.%s" % (ident, params.BB_FILE_EXT)),
+                os.path.join(folders[0], "%s.%s" % (rs_e.ContextBack.ident,
+                                                    params.BB_FILE_EXT)),
                 header, cb.seq, cb.struct, params.BB_TERMINATOR)
             write_to_file(
-                os.path.join(folders[1], "%s.%s" % (ident, params.BB_FILE_EXT)),
+                os.path.join(folders[1], "%s.%s" % (rs_e.ContextBack.ident,
+                                                    params.BB_FILE_EXT)),
                 header, cb.seq, cb.struct, params.BB_TERMINATOR)
 
         # pattern file
@@ -548,7 +550,7 @@ class Riboswitch(object):
 
     def get_accessibility_positions(self):
         start = self.pos[0]
-        rs = list(self._elements[rs_e.Type.restriction_site][0].pos)
+        rs = list(self._elements[rs_e.Type.target_site][0].pos)
         rs[0] += 3  # HACK!!!
         try:
             ac = self._elements[rs_e.Type.access_constraint][0].pos
@@ -584,15 +586,15 @@ class Riboswitch(object):
             func_site_elements = (
                 itertools.chain(
                     self._elements[rs_e.Type.hairpin],
-                    self._elements[rs_e.Type.restriction_site],
-                    self._elements[rs_e.Type.seq],
+                    self._elements[rs_e.Type.target_site],
+                    self._elements[rs_e.Type.seq_constraint],
                     (aptamer_seq,)))
         else:
             func_site_elements = (
                 itertools.chain(
                     self._elements[rs_e.Type.hairpin],
-                    self._elements[rs_e.Type.restriction_site],
-                    self._elements[rs_e.Type.seq]))
+                    self._elements[rs_e.Type.target_site],
+                    self._elements[rs_e.Type.seq_constraint]))
 
         return get_constraints(self.pos_instance, func_site_elements)
 
@@ -600,8 +602,8 @@ class Riboswitch(object):
         riboswitch_elements = (
             itertools.chain(
                 self._elements[rs_e.Type.hairpin],
-                self._elements[rs_e.Type.restriction_site],
-                self._elements[rs_e.Type.seq],
+                self._elements[rs_e.Type.target_site],
+                self._elements[rs_e.Type.seq_constraint],
                 self._elements[rs_e.Type.aptamer]))
         return get_constraints(self.pos_riboswitch, riboswitch_elements)
 
@@ -619,8 +621,8 @@ class Riboswitch(object):
             except IndexError:
                 pass
 
-            restr_site = self._elements[rs_e.Type.restriction_site][0]
-            info.append(repr(restr_site))
+            target_site = self._elements[rs_e.Type.target_site][0]
+            info.append(repr(target_site))
 
             for hairpin in sorted(self._elements[rs_e.Type.hairpin],
                                   key=lambda h: (h.state, h.pos)):
@@ -630,7 +632,7 @@ class Riboswitch(object):
                                   key=lambda a: (a.state, a.pos)):
                 info.append(repr(aptamer))
 
-            for seq_constraint in sorted(self._elements[rs_e.Type.seq],
+            for seq_constraint in sorted(self._elements[rs_e.Type.seq_constraint],
                                          key=lambda s: s.pos):
                 info.append(repr(seq_constraint))
 
@@ -675,11 +677,11 @@ class Riboswitch(object):
             info.append("   Aptamer %s %s %s %s" %
                         (aptamer.struct, aptamer.seq, pos,
                          rs_e.State.get_str(aptamer.state)))
-        restr_site = (
-            self._elements[rs_e.Type.restriction_site][0])
-        pos = restr_site.pos[0] - start, restr_site.pos[1] - start
-        info.append("   Restriction site %s %s" % (restr_site.seq, pos))
-        for seq_constraint in self._elements[rs_e.Type.seq]:
+        target_site = (
+            self._elements[rs_e.Type.target_site][0])
+        pos = target_site.pos[0] - start, target_site.pos[1] - start
+        info.append("   Restriction site %s %s" % (target_site.seq, pos))
+        for seq_constraint in self._elements[rs_e.Type.seq_constraint]:
             pos = seq_constraint.pos[0] - start, seq_constraint.pos[1] - start
             info.append("   Sequence constraint %s %s" %
                         (seq_constraint.seq, pos))
@@ -746,7 +748,7 @@ class Riboswitch(object):
 
         ### validate length of the functional site #############################
         size = self.pos_instance[1] - self.pos_instance[0]
-        if size > FUNCTIONAL_SITE_MAX_LENGTH:
+        if size > EXPRESSION_PLATFORM_MAX_LEN:
             raise ValueError(
                 "Functional site exceeds maximal length of the functional "
                 "site.")
@@ -757,26 +759,26 @@ class Riboswitch(object):
             raise ValueError("Riboswitch contains more than one front kontext.")
         # tests concerning the functional site are done later
 
-        ### validate the restriction site ######################################
-        restriction_site = (
-            self._elements[rs_e.Type.restriction_site])
+        ### validate the target site ######################################
+        target_site = (
+            self._elements[rs_e.Type.target_site])
         # check if builder contains another TargetSite
-        if len(restriction_site) != 1:
+        if len(target_site) != 1:
             raise ValueError(
                 "Riboswitch contains no or too many TargetSite "
                 "elements.")
-        restriction_site = restriction_site[0]
+        target_site = target_site[0]
         # check if the TargetSite intersects with the context front
         if len(self._elements[rs_e.Type.context_front]):
             context_front = (
                 self._elements[rs_e.Type.context_front][0])
-            if restriction_site.pos[0] < context_front.pos[1]:
+            if target_site.pos[0] < context_front.pos[1]:
                 raise ValueError(
                     "Restriction site intersects with front kontext.")
         # tests concerning the functional site are done later
 
         ### validate sequence constraints ######################################
-        for seq_constraint in self._elements[rs_e.Type.seq]:
+        for seq_constraint in self._elements[rs_e.Type.seq_constraint]:
             # check if the seq intersects with the context front
             if len(self._elements[rs_e.Type.context_front]):
                 context_front = (
@@ -822,25 +824,25 @@ class Riboswitch(object):
                 raise ValueError(
                     "Riboswitch contains Hairpin elements that do not"
                     " match.")
-            # validate overlapping parts with the restriction site
-            restr_site = (
-                self._elements[rs_e.Type.restriction_site][0])
-            validate_overlapping_part(hairpin, restr_site)
-            # # the restriction site has to lie within the bound hairpin element
+            # validate overlapping parts with the target site
+            target_site = (
+                self._elements[rs_e.Type.target_site][0])
+            validate_overlapping_part(hairpin, target_site)
+            # # the target site has to lie within the bound hairpin element
             # if hairpin.state == rs_e.State.bound:
-            #     if restr_site.pos[1] <= hairpin.pos[0]:
+            #     if target_site.pos[1] <= hairpin.pos[0]:
             #         raise ValueError(
-            #             "The restriction site has to lie within the bound "
+            #             "The target site has to lie within the bound "
             #             "hairpin element.")
-            # # the restriction site cannot overlap with the unbound hairpin
+            # # the target site cannot overlap with the unbound hairpin
             # # element
             # else:
-            #     if restr_site.pos[1] > hairpin.pos[1]:
+            #     if target_site.pos[1] > hairpin.pos[1]:
             #         raise ValueError(
-            #             "The restriction site cannot overlap with the unbound "
+            #             "The target site cannot overlap with the unbound "
             #             "hairpin element.")
             # validate overlapping parts with sequence constraint elements
-            for seq_constraint in self._elements[rs_e.Type.seq]:
+            for seq_constraint in self._elements[rs_e.Type.seq_constraint]:
                 validate_overlapping_part(hairpin, seq_constraint)
 
         ### validate the aptamer site ##########################################
@@ -854,14 +856,14 @@ class Riboswitch(object):
                       aptamer.pos[0] < hairpin.pos[1]):
                 raise ValueError(
                     "Aptamer intersects with functional site.")
-            restr_site = (
-                self._elements[rs_e.Type.restriction_site][0])
-            if aptamer.pos[0] < restr_site.pos[1]:
+            target_site = (
+                self._elements[rs_e.Type.target_site][0])
+            if aptamer.pos[0] < target_site.pos[1]:
                 raise ValueError(
                     "Aptamer intersects with functional site.")
             if any(seq_constraint
                    for seq_constraint
-                   in self._elements[rs_e.Type.seq]
+                   in self._elements[rs_e.Type.seq_constraint]
                    if aptamer.pos[0] < seq_constraint.pos[1]):
                 raise ValueError(
                     "Aptamer intersects with functional site.")
