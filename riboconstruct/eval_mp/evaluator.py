@@ -5,7 +5,6 @@ import shutil
 from . import settings
 from .. import main
 from .. import helper
-from .. import params
 from .. import riboswitch as rs
 from .. import rna_f
 from ..riboswitch import element as rs_e
@@ -91,9 +90,9 @@ class Evaluator(mp.Process):
                 # evaluate
                 evaluation_output = (
                     rna_f.evaluate(evaluation_folders[0],
-                                   params.PATTERN_FILE_NAME),
+                                   helper.PATTERN_FILE_NAME),
                     rna_f.evaluate(evaluation_folders[1],
-                                   params.PATTERN_FILE_NAME))
+                                   helper.PATTERN_FILE_NAME))
                 # extract features
                 features = main.get_features(evaluation_output)
                 # calculate score

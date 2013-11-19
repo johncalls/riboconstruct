@@ -12,6 +12,12 @@ MAX_FLOAT = 10000000.0
 MIN_FLOAT = -MAX_FLOAT
 
 
+# RNAf
+BB_FILE_EXT = "bb"
+BB_TERMINATOR = "<<<"
+PATTERN_FILE_NAME = "pattern.p"
+
+
 def enum(*sequential, **named):
     """
     Helper function to construct C#-like enums.
