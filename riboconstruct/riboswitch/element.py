@@ -92,6 +92,15 @@ class Hairpin(Element):
         pos = self.pos[0] + num_pos, self.pos[1] + num_pos
         return Hairpin(self.state, pos, self.struct)
 
+    def shift(self, num_pos=1):
+        """
+        Returns a new hairpin shifted upstream by *num_pos* positions,
+        if ``num_pos > 0``. If ``num_pos < 0``, the hairpin is shifted
+        downstream.
+        """
+        pos = self.pos[0] + num_pos, self.pos[1] + num_pos
+        return Hairpin(self.state, pos, self.struct)
+
     def insert_bp_after(self, bp_pos_id):
         bp_pos_i, bp_pos_j = self.struct.bp_positions[bp_pos_id]
         new_bp_pos_i, new_bp_pos_j = bp_pos_i + 1, bp_pos_j + 1
@@ -140,19 +149,6 @@ class Hairpin(Element):
         return Hairpin(self.state, pos, struct)
 
 
-class AccessConstraint(Element):
-    ident = "AC"
-
-    def __init__(self, pos, seq):
-        super(AccessConstraint, self).__init__(
-            Type.access_constraint, None, pos, None, seq)
-
-    def __repr__(self):
-        return (
-            "(%s (%i,%i) '%s')" % (
-                self.ident, self.pos[0], self.pos[1], str(self.seq)))
-
-
 class TargetSite(Element):
     ident = "TS"
 
@@ -168,6 +164,15 @@ class TargetSite(Element):
         return TargetSite(pos, self.seq)
 
     def shift_up(self, num_pos=1):
+        pos = self.pos[0] + num_pos, self.pos[1] + num_pos
+        return TargetSite(pos, self.seq)
+
+    def shift(self, num_pos=1):
+        """
+        Returns a new target site element shifted upstream by *num_pos*
+        positions, if ``num_pos > 0``. If ``num_pos < 0``, the target
+        site is shifted downstream.
+        """
         pos = self.pos[0] + num_pos, self.pos[1] + num_pos
         return TargetSite(pos, self.seq)
 
@@ -196,6 +201,15 @@ class ContextFront(Context):
         pos = self.pos[0] + num_pos, self.pos[1] + num_pos
         return ContextFront(pos, self.struct, self.seq)
 
+    def shift(self, num_pos=1):
+        """
+        Returns a context front element shifted upstream by *num_pos*
+        positions, if ``num_pos > 0``. If ``num_pos < 0``, the context
+        front is shifted downstream.
+        """
+        pos = self.pos[0] + num_pos, self.pos[1] + num_pos
+        return ContextFront(pos, self.struct, self.seq)
+
 
 class ContextBack(Context):
     ident = "Cb"
@@ -208,6 +222,15 @@ class ContextBack(Context):
         return "(Cb (%i,%i) '%s' '%s')" % (
             self.pos[0], self.pos[1], str(self.struct), str(self.seq))
 
+    def shift(self, num_pos=1):
+        """
+        Returns a context back element shifted upstream by *num_pos*
+        positions, if ``num_pos > 0``. If ``num_pos < 0``, the context
+        back is shifted downstream.
+        """
+        pos = self.pos[0] + num_pos, self.pos[1] + num_pos
+        return ContextBack(pos, self.struct, self.seq)
+
 
 class SequenceConstraint(Element):
     ident = "SC"
@@ -218,3 +241,16 @@ class SequenceConstraint(Element):
 
     def __repr__(self):
         return "(S (%i,%i) '%s')" % (self.pos[0], self.pos[1], str(self.seq))
+
+
+class AccessConstraint(Element):
+    ident = "AC"
+
+    def __init__(self, pos, seq):
+        super(AccessConstraint, self).__init__(
+            Type.access_constraint, None, pos, None, seq)
+
+    def __repr__(self):
+        return (
+            "(%s (%i,%i) '%s')" % (
+                self.ident, self.pos[0], self.pos[1], str(self.seq)))
