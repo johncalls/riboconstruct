@@ -178,28 +178,27 @@ class TargetSite(Element):
 
 
 class Context(Element):
-    def __init__(self, m_type, pos, struct, seq):
-        super(Context, self).__init__(m_type, None, pos, struct, seq)
+    def __init__(self, m_type, pos, seq):
+        super(Context, self).__init__(m_type, None, pos, seq)
 
 
 class ContextFront(Context):
     ident = "Cf"
 
-    def __init__(self, pos, struct, seq):
-        super(ContextFront, self).__init__(
-            Type.context_front, pos, struct, seq)
+    def __init__(self, pos, seq):
+        super(ContextFront, self).__init__(Type.context_front, pos, seq)
 
     def __repr__(self):
-        return "(Cf (%i,%i) '%s' '%s')" % (
-            self.pos[0], self.pos[1], str(self.struct), str(self.seq))
+        return "(Cf (%i,%i) '%s')" % (
+            self.pos[0], self.pos[1], str(self.seq))
 
     def shift_down(self, num_pos=1):
         pos = self.pos[0] - num_pos, self.pos[1] - num_pos
-        return ContextFront(pos, self.struct, self.seq)
+        return ContextFront(pos, self.seq)
 
     def shift_up(self, num_pos=1):
         pos = self.pos[0] + num_pos, self.pos[1] + num_pos
-        return ContextFront(pos, self.struct, self.seq)
+        return ContextFront(pos, self.seq)
 
     def shift(self, num_pos=1):
         """
@@ -208,19 +207,18 @@ class ContextFront(Context):
         front is shifted downstream.
         """
         pos = self.pos[0] + num_pos, self.pos[1] + num_pos
-        return ContextFront(pos, self.struct, self.seq)
+        return ContextFront(pos, self.seq)
 
 
 class ContextBack(Context):
     ident = "Cb"
 
-    def __init__(self, pos, struct, seq):
-        super(ContextBack, self).__init__(
-            Type.context_back, pos, struct, seq)
+    def __init__(self, pos, seq):
+        super(ContextBack, self).__init__(Type.context_back, pos, seq)
 
     def __repr__(self):
-        return "(Cb (%i,%i) '%s' '%s')" % (
-            self.pos[0], self.pos[1], str(self.struct), str(self.seq))
+        return "(Cb (%i,%i) '%s')" % (
+            self.pos[0], self.pos[1], str(self.seq))
 
     def shift(self, num_pos=1):
         """
@@ -229,7 +227,7 @@ class ContextBack(Context):
         back is shifted downstream.
         """
         pos = self.pos[0] + num_pos, self.pos[1] + num_pos
-        return ContextBack(pos, self.struct, self.seq)
+        return ContextBack(pos, self.seq)
 
 
 class SequenceConstraint(Element):

@@ -70,7 +70,6 @@ class InstanceSpace(object):
         self._current_instance = instance
         self._elements = dict()
         # rearrange riboswitch elements by their identifiers
-        print instance.elements
         for element in instance.elements:
             if element.state is None:
                 ident = str(element.ident)
@@ -111,7 +110,8 @@ class InstanceSpace(object):
 
         self.register(instance)
         for target_ident in self._actions.iter_target_identifiers():
-            for action, a_args in self._actions.iter_actions(target_ident):
+            for action_ident in self._actions.iter_actions(target_ident):
+                action, a_args = action_ident
                 # alter the current instance
                 alternation = instance.copy()
                 for single_target_ident in target_ident:
@@ -121,7 +121,7 @@ class InstanceSpace(object):
                     new = action(old, *a_args)
                     alternation.replace(old, new)
                 # check constraints for each target_ident and action
-                if constraints_fulfilled(target_ident, action):
+                if constraints_fulfilled(target_ident, action_ident):
                     yield alternation
 
     def _within_dist(self, ident_a, ident_b, max_dist):
@@ -210,6 +210,8 @@ class ActionContainer(object):
         for the same target and action, and each is checked before the
         action is performed.
         """
+        if len(constraint) == 2:
+            constraint = constraint + (False,)
         try:
             self._container[target_ident][action].append(constraint)
         except KeyError:
@@ -228,7 +230,7 @@ class ActionContainer(object):
         """
         Iterate all constraints added for a specific target and action.
         """
-        return self._container[target_ident][action].itervalues()
+        return iter(self._container[target_ident][action])
 
     def iter_all_constraints(self):
         """Iterate all defined constraints."""

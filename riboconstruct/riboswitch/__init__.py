@@ -96,13 +96,13 @@ def iter_riboswitch(config):
                 seq = rna.IUPACSequence(next().upper())
                 if pos[1] - pos[0] != len(struct) != len(seq):
                     raise ValueError("Context front element has wrong size.")
-                yield rs_e.ContextFront(pos, struct, seq)
+                yield rs_e.ContextFront(pos, seq)
             elif re_type == rs_e.Type.context_back:
                 struct = rna.Structure(line)
                 seq = rna.IUPACSequence(next().upper())
                 if pos[1] - pos[0] != len(struct) != len(seq):
                     raise ValueError("Context back element has wrong size.")
-                yield rs_e.ContextBack(pos, struct, seq)
+                yield rs_e.ContextBack(pos, seq)
             elif re_type == rs_e.Type.seq:
                 seq = rna.IUPACSequence(line.upper())
                 if pos[1] - pos[0] != len(seq):
@@ -237,11 +237,11 @@ def get_riboswitch_from_str(riboswitch_str):
             elif type_ == "Cf":
                 struct = rna.Structure(eval(rs_elem[2]))
                 seq = rna.Sequence(eval(rs_elem[3]))
-                riboswitch.add(rs_e.ContextFront(pos, struct, seq))
+                riboswitch.add(rs_e.ContextFront(pos, seq))
             elif type_ == "Cb":
                 struct = rna.Structure(eval(rs_elem[2]))
                 seq = rna.Sequence(eval(rs_elem[3]))
-                riboswitch.add(rs_e.ContextBack(pos, struct, seq))
+                riboswitch.add(rs_e.ContextBack(pos, seq))
             elif type_ == rs_e.AccessConstraint.ident:
                 seq = rna.Sequence(eval(rs_elem[2]))
                 riboswitch.add(rs_e.AccessConstraint(pos, seq))
