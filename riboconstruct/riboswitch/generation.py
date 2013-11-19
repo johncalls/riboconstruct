@@ -24,12 +24,11 @@ class InstanceSpace(object):
     within.
 
     The current instance that is going to be altered is registered
-    using ``InstanceSpace.register`` and the resulting instances are
-    iterated using ``InstanceSpace.iter_alterations``. The rules how
-    to alter the current instance and which constraints they have to
-    fulfill are stored in an ``ActionContainer``
-    (:class:`riboconstruct.generation.ActionContainer`). They have to be
-    defined in the specific subclasses of ``InstanceSpace``.
+    using :func:`register` and the resulting instances are iterated
+    using :func:`iter_alterations`. The rules how to alter the current
+    instance and which constraints they have to fulfill are stored in an
+    :class:`ActionContainer`. They have to be defined in the specific
+    subclasses of :class:`InstanceSpace`.
     """
 
     __all__ = ["validate", "register", "create_evaluation_files",
@@ -118,7 +117,7 @@ class InstanceSpace(object):
                     # perform the action and replace the old riboswitch
                     # element by the new one
                     old = self._elements[single_target_ident]
-                    new = action(old, *a_args)
+                    new = getattr(old, action)(*a_args)
                     alternation.replace(old, new)
                 # check constraints for each target_ident and action
                 if constraints_fulfilled(target_ident, action_ident):
@@ -329,22 +328,22 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         #
         # self._actions.add(
         #   (h_b,),                          # target_ident
-        #   (rs_e.Hairpin.shift, (1,)),      # action
+        #   ("shift", (1,)),      # action
         #   (self._matching, (h_b, ts, 1)))  # constraint
         # --------------------------------------------------------------
         # sequestor - shift up
         # --------------------------------------------------------------
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._matching, (h_b, ts)))
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._overlapping, (h_b, ts)))
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._overlapping, (h_b, a_b), True))
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (lambda h_b, h_ub: self.element(h_b).pos[0] <
                                             self.element(h_ub).pos[0],
                           (h_b, h_ub)))
@@ -352,33 +351,33 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # anti-sequestor - shift up
         # --------------------------------------------------------------
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._matching, (h_ub, ts)))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._overlapping, (h_ub, a_ub), True))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._within_dist, (h_ub, h_b, 0)))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._within_dist, (h_ub, h_b, 0)))
         # should not overlap with the B1-2 region
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (1,)),
+                         ("shift", (1,)),
                          (self._overlapping, (h_ub, b1_2_ac), True))
         # --------------------------------------------------------------
         # sequestor - shift down
         # --------------------------------------------------------------
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (self._matching, (h_b, ts)))
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (self._within_dist, (h_b, h_ub, 0)))
         # sequestor has to stay within expression platform
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (lambda h_b, cf: self.element(h_b).pos[0] >=
                                           self.element(cf).pos[1],
                           (h_b, cf)))
@@ -386,17 +385,17 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # anti-sequestor - shift down
         # --------------------------------------------------------------
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (self._matching, (h_ub, ts)))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (self._overlapping, (h_ub, ts), True))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (self._within_dist,
                           (h_ub, a_b, ub_hairpin_aptamer_dist)))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.shift, (-1,)),
+                         ("shift", (-1,)),
                          (lambda h_ub, h_b: self.element(h_b).pos[0] <
                                             self.element(h_ub).pos[0],
                           (h_ub, h_b)))
@@ -404,48 +403,49 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # target site - shift up ---> decreases expression platform
         # --------------------------------------------------------------
         self._actions.add((ts, cf),
-                         (rs_e.TargetSite.shift, (1,)),
+                         ("shift", (1,)),
                          (self._overlapping, (ts, h_ub), True))
         # context front (!) and hairpin should not overlap
         self._actions.add((ts, cf),
-                         (rs_e.TargetSite.shift, (1,)),
+                         ("shift", (1,)),
                          (self._overlapping, (cf, h_b), True))
         self._actions.add((ts, cf),
-                         (rs_e.TargetSite.shift, (1,)),
+                         ("shift", (1,)),
                          (self._matching, (h_b, ts)))
         # --------------------------------------------------------------
         # target site - shift down ---> increases expression platform
         # --------------------------------------------------------------
         # size of expression platform is limited
         self._actions.add((ts, cf),
-                         (rs_e.TargetSite.shift, (-1,)),
+                         ("shift", (-1,)),
                          (lambda ts, cf, a_ub:
-                             self.element(a_ub).pos[0] - (ts.pos[0] - 1) <=
+                             (self.element(a_ub).pos[0] -
+                                (self.element(ts).pos[0] - 1)) <=
                              expression_platform_max_len,
                           (ts, cf, a_ub)))
         # target site and sequestor should still overlap
         self._actions.add((ts, cf),
-                         (rs_e.TargetSite.shift, (-1,)),
+                         ("shift", (-1,)),
                          (self._overlapping, (h_b, ts)))
         self._actions.add((ts, cf),
-                         (rs_e.TargetSite.shift, (-1,)),
+                         ("shift", (-1,)),
                          (self._matching, (h_b, ts)))
         # --------------------------------------------------------------
         # sequestor - increase stem
         # --------------------------------------------------------------
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (self._matching, (h_b, ts)))
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (self._overlapping, (h_b, a_b), True))
         # sequestor has to stay within expression platform
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (self._overlapping, (h_b, cf), True))
         # there is a maximum stem size
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (lambda h_b:
                              len(self.element(h_b).struct.bp_positions) <
                              hairpin_stem_size[1],
@@ -454,19 +454,19 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # anti-sequestor - increase stem
         # --------------------------------------------------------------
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (self._overlapping, (h_ub, a_ub), True))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (self._overlapping, (h_ub, ts), True))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (lambda h_ub, h_b: self.element(h_b).pos[0] <
                                             self.element(h_ub).pos[0],
                           (h_ub, h_b)))
         # there is a maximum stem size
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.insert_bp_before, (0,)),
+                         ("insert_bp_before", (0,)),
                          (lambda h_ub:
                              len(h_ub.struct.bp_positions) <
                              hairpin_stem_size[1],
@@ -475,19 +475,19 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # sequestor - decrease stem
         # --------------------------------------------------------------
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.remove_bp, (0,)),
+                         ("remove_bp", (0,)),
                          (self._matching, (h_b, ts)))
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.remove_bp, (0,)),
+                         ("remove_bp", (0,)),
                          (lambda h_b, h_ub: self.element(h_b).pos[0] <
                                             self.element(h_ub).pos[0],
                           (h_b, h_ub)))
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.remove_bp, (0,)),
+                         ("remove_bp", (0,)),
                          (self._within_dist, (h_b, h_ub, 0)))
         # there is a minimum stem size
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.remove_bp, (0,)),
+                         ("remove_bp", (0,)),
                          (lambda h_b:
                             len(self.element(h_b).struct.bp_positions) >
                             hairpin_stem_size[0],
@@ -496,17 +496,17 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # anti-sequestor - decrease stem
         # --------------------------------------------------------------
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.remove_bp, (0,)),
+                         ("remove_bp", (0,)),
                          (self._within_dist, (h_ub, h_b, 0)))
         # there is a minimum stem size
         self._actions.add((h_b,),
-                         (rs_e.Hairpin.remove_bp, (0,)),
+                         ("remove_bp", (0,)),
                          (lambda h_b:
                              len(self.element(h_b).struct.bp_positions) >
                              hairpin_stem_size[0],
                           (h_b,)))
         self._actions.add((h_ub,),
-                         (rs_e.Hairpin.remove_bp, (0,)),
+                         ("remove_bp", (0,)),
                          (self._within_dist,
                           (h_ub, a_b, ub_hairpin_aptamer_dist)))
 
