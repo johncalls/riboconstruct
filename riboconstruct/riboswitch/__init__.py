@@ -1,10 +1,7 @@
 import copy
-import itertools
-import os
 import sys
 
 from . import element as rs_e
-from .. import params
 from .. import rna
 
 
