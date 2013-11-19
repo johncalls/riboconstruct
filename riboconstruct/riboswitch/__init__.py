@@ -194,6 +194,7 @@ def get_riboswitch_from_str(riboswitch_str):
                 riboswitch.add(rs_e.Aptamer(state, pos, struct, seq))
             elif type_ == rs_e.Hairpin.ident:
                 riboswitch.add(rs_e.Hairpin(state, pos, struct))
+
     return riboswitch
 
 
@@ -218,31 +219,31 @@ def get_constraints((start, end), riboswitch_elements):
     structs = ([rna.STRUCT_ELEM_UNSPEC] * length,
                [rna.STRUCT_ELEM_UNSPEC] * length)
 
-    for rs_elem in riboswitch_elements:
-        # clip rs_elem position into the start-end range
-        rs_elem_start = rs_elem.pos[0] if rs_elem.pos[0] > start else start
-        rs_elem_end = rs_elem.pos[1] if rs_elem.pos[1] < end else end
-        i, j = rs_elem_start - start, rs_elem_end - start
+    for element in riboswitch_elements:
+        # clip element position into the start-end range
+        element_start = element.pos[0] if element.pos[0] > start else start
+        element_end = element.pos[1] if element.pos[1] < end else end
+        i, j = element_start - start, element_end - start
 
-        if (rs_elem.type == rs_e.Type.target_site or
-            rs_elem.type == rs_e.Type.seq_constraint):
+        if (element.type == rs_e.Type.target_site or
+            element.type == rs_e.Type.seq_constraint):
             for pos in xrange(i, j):
-                set_base(pos, rs_elem.seq[pos - i])
-        elif rs_elem.type == rs_e.Type.hairpin:
+                set_base(pos, element.seq[pos - i])
+        elif element.type == rs_e.Type.hairpin:
             for pos in xrange(i, j):
-                set_struct_elem(rs_elem.state, pos, rs_elem.struct[pos - i])
-        elif rs_elem.type == rs_e.Type.aptamer:
+                set_struct_elem(element.state, pos, element.struct[pos - i])
+        elif element.type == rs_e.Type.aptamer:
             for pos in xrange(i, j):
-                set_base(pos, rs_elem.seq[pos - i])
-                set_struct_elem(rs_elem.state, pos, rs_elem.struct[pos - i])
-        elif rs_elem.type == rs_e.Type.access_constraint:
+                set_base(pos, element.seq[pos - i])
+                set_struct_elem(element.state, pos, element.struct[pos - i])
+        elif element.type == rs_e.Type.access_constraint:
             # The sequence of the access constraint should fit to the aptamer
             # sequence it is overlapping with (has been checked before), i.e.
             # do nothing here
             pass
         else:  # context_front or context_back
             for pos in xrange(i, j):
-                set_base(pos, rs_elem.seq[pos - i])
+                set_base(pos, element.seq[pos - i])
 
     return (''.join(structs[0]), ''.join(structs[1])), ''.join(seq)
 
@@ -340,12 +341,12 @@ class Riboswitch(object):
     def remove(self, element):
         """Remove a riboswitch *element* from the instance."""
         try:
-            del self.elements[element]
+            self.elements.remove(element)
         except KeyError:
             pass
         try:
             # remove old if it exists
-            self._elements[rs_elem.type].remove(rs_elem)
+            self._elements[element.type].remove(element)
         except ValueError:
             pass
 

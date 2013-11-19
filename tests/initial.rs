@@ -10,11 +10,9 @@ AACAUA
 (((((((...)))))))
 >Hairpin|0,17|bound
 (((((((...)))))))
->Restriction_site|0,10
+>Target_site|0,10
 AUGAGUAUGU
 >Context_front|-45,0
-.............................................
 AAGCUAUACCAAGCAUACAAUCAACUCCAAGCUAGAUCUCUUAAG
 >Context_back|103,148
-.............................................
 AUCUAGCGCUGGUACCAUCCCAUUUAACUGUAAGAAGAAUUGCAC

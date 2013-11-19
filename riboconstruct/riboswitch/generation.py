@@ -82,11 +82,11 @@ class InstanceSpace(object):
             self._elements[ident] = element
         # if there are no context elements, add dummies
         if rs_e.ContextFront.ident not in instance.elements:
-            pos = (instance.pos_instance[0], instance.pos_riboswitch[0])
+            pos = (instance.pos_riboswitch[0], instance.pos_riboswitch[0])
             cf = rs_e.ContextFront(pos, ())
             self._elements[cf.ident] = cf
         if rs_e.ContextBack.ident not in instance.elements:
-            pos = (instance.pos_riboswitch[1], instance.pos_instance[1])
+            pos = (instance.pos_riboswitch[1], instance.pos_riboswitch[1])
             cb = rs_e.ContextBack(pos, ())
             self._elements[cb.ident] = cb
 
@@ -536,7 +536,7 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         b_struct = structs[b]
         ub_struct = structs[ub]
 
-        pos_instance = instance.pos_instance
+        pos_instance = instance.pos
         pos_riboswitch = instance.pos_riboswitch
         start = pos_instance[0]
 
