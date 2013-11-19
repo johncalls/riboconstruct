@@ -6,6 +6,7 @@ riboconstruct.riboswitch package
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
+    :special-members: __eq__, __repr__, __hash__
 
 
 Submodules
@@ -19,7 +20,8 @@ element
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
-
+   :private-members:
+   
 generation
 ^^^^^^^^^^
 

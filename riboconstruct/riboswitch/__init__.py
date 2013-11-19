@@ -131,31 +131,10 @@ def get_riboswitch_from_config_file(config_file, validator=None):
     return riboswitch
 
 
-EXPRESSION_PLATFORM_MAX_LEN = 50
-
-PATTERNS = [None, None]
-
-# in the bound case:
-# due to ligand binding the aptamer is in a certain conformation forcing the
-# hairpin to fold into a certain structure, i.e. use the aptamer as structural
-# constraint and check if the hairpin folds into the modelled structure
-PATTERNS[rs_e.State.bound] = (
-    "({}|%%s%%s#%%s%s&%%s%%s|1)" % unichr(167).encode("utf-8"))
-
-# in the unbound case:
-# both hairpin and aptamer should fold into the modelled structure, i.e. use NO
-# structural constraint and check if the aptamer and the hairpin fold into the
-# modelled structures
-PATTERNS[rs_e.State.unbound] = (
-    "({}|%%s%%s#%%s%s%%s#%%s%%s|1)" % unichr(167).encode("utf-8"))
-
-PATTERNS = tuple(PATTERNS)
-
-
 def get_riboswitch_from_str(riboswitch_str):
     """
     Parse a riboswitch string representation and return the
-    corresponding riboswitch instance.
+    corresponding :class:`Riboswitch`.
     """
     riboswitch = Riboswitch()
     elements_iter = iter(riboswitch_str.split(';'))
@@ -198,56 +177,6 @@ def get_riboswitch_from_str(riboswitch_str):
     return riboswitch
 
 
-def get_constraints((start, end), riboswitch_elements):
-    def set_base(pos, new_base):
-        if new_base == rna.BASES[rna.BaseId.UNSPEC]:
-            return
-        if seq[pos] == rna.BASES[rna.BaseId.UNSPEC]:
-            seq[pos] = new_base
-        # TODO: remove later since this should not happen
-        elif seq[pos] != new_base:
-            raise ValueError("Overlapping bases at position %i not valid %s "
-                             "vs. %s" % (pos, seq[pos], new_base))
-
-    # set new_struct_elem if the elem has not been specified before
-    def set_struct_elem(state, pos, new_struct_elem):
-        if structs[state][pos] == rna.STRUCT_ELEM_UNSPEC:
-            structs[state][pos] = new_struct_elem
-
-    length = end - start
-    seq = [rna.BASES[rna.BaseId.UNSPEC]] * length
-    structs = ([rna.STRUCT_ELEM_UNSPEC] * length,
-               [rna.STRUCT_ELEM_UNSPEC] * length)
-
-    for element in riboswitch_elements:
-        # clip element position into the start-end range
-        element_start = element.pos[0] if element.pos[0] > start else start
-        element_end = element.pos[1] if element.pos[1] < end else end
-        i, j = element_start - start, element_end - start
-
-        if (element.type == rs_e.Type.target_site or
-            element.type == rs_e.Type.seq_constraint):
-            for pos in xrange(i, j):
-                set_base(pos, element.seq[pos - i])
-        elif element.type == rs_e.Type.hairpin:
-            for pos in xrange(i, j):
-                set_struct_elem(element.state, pos, element.struct[pos - i])
-        elif element.type == rs_e.Type.aptamer:
-            for pos in xrange(i, j):
-                set_base(pos, element.seq[pos - i])
-                set_struct_elem(element.state, pos, element.struct[pos - i])
-        elif element.type == rs_e.Type.access_constraint:
-            # The sequence of the access constraint should fit to the aptamer
-            # sequence it is overlapping with (has been checked before), i.e.
-            # do nothing here
-            pass
-        else:  # context_front or context_back
-            for pos in xrange(i, j):
-                set_base(pos, element.seq[pos - i])
-
-    return (''.join(structs[0]), ''.join(structs[1])), ''.join(seq)
-
-
 # INFO: the currenty riboswitch model only supports ONE hairpin loop (for each
 # state) although some functionalities are already implemented to support more
 # than one hairpin
@@ -255,12 +184,13 @@ def get_constraints((start, end), riboswitch_elements):
 class Riboswitch(object):
     """
     A class to represent riboswitch instances which are defined by their
-    riboswitch elements (:class:`~riboconstruct.riboswitch.element`).
+    riboswitch :class:`~riboconstruct.riboswitch.element`\ s.
     """
 
     __all__ = ["copy", "add", "remove", "replace", "reset_repr",
                "get_constraints", "get_constraints_riboswitch",
                "get_len", "get_len_riboswitch"]
+
 
     def __init__(self):
         self.elements = set()
@@ -288,9 +218,8 @@ class Riboswitch(object):
         """
         Returns the riboswitch instance string representation.
 
-        The representation is computed only once and then stored in
-        ``Instance._str``. ``Instance.reset_repr()`` is used to reset
-        the representation whenever the riboswitch instance is changed.
+        The representation is computed only once. If necessary, the
+        representation can be resetted using :func:`reset_repr`.
         """
         try:
             return self._str
@@ -315,7 +244,10 @@ class Riboswitch(object):
         return new
 
     def add(self, element):
-        """Add a riboswitch element to the instance."""
+        """
+        Add a riboswitch :class:`~riboconstruct.riboswitch.element` to
+        the instance.
+        """
         self.reset_repr()
         # TODO: remove later
         self._elements[element.type].append(element)
@@ -339,7 +271,10 @@ class Riboswitch(object):
                 self.pos_riboswitch[0] = element.pos[0]
 
     def remove(self, element):
-        """Remove a riboswitch *element* from the instance."""
+        """
+        Remove a :class:`~riboconstruct.riboswitch.element` from this
+        riboswitch.
+        """
         try:
             self.elements.remove(element)
         except KeyError:
@@ -351,7 +286,10 @@ class Riboswitch(object):
             pass
 
     def replace(self, old, new):
-        """Replace an *old* riboswitch element by a *new* one."""
+        """
+        Replace an *old* riboswitch
+        :class:`~riboconstruct.riboswitch.element` by a *new* one.
+        """
         self.remove(old)
         self.add(new)
 
@@ -369,32 +307,99 @@ class Riboswitch(object):
         l = max(a_b.pos[1] - a_b.pos[0],
                 h_0.pos[1] - h_0.pos[0],
                 h_1.pos[1] - h_1.pos[0]) + 2
-        return (rs[0] - start, ac[0] - start), (rs[1] - rs[0], ac[1] - ac[0]), l
+        return ((rs[0] - start, ac[0] - start),
+                (rs[1] - rs[0], ac[1] - ac[0]),
+                l)
 
     def get_constraints(self):
         """
         Get the structural constraints for both conformations and the
-        sequential constraint defined by the riboswitch's elements plus
-        the sequential constraints of its contexts.
+        sequential constraint defined by the riboswitch's elements
+        (including the defined
+        :class:`~riboconstruct.riboswitch.element.Context`, if there is
+        any).
+
+        Example: ::
+
+            from riboconstruct.riboswitch import element as rs_e
+            riboswitch = ...  # initialize riboswitch somehow
+            structs, seq = riboswitch.get_constraints()
+            struct_ub = structs[rs_e.State.unbound]
         """
-        return get_constraints(self.pos, self.elements)
+        return self._get_constraints(self.pos, self.elements)
 
     def get_constraints_riboswitch(self):
         """
         Get the structural constraints for both conformations and the
         sequential constraint defined by the riboswitch's elements
-        (without any context).
+        (without any
+        :class:`~riboconstruct.riboswitch.element.Context`).
         """
-        return get_constraints(self.pos_riboswitch,
-                               (element for element in self.elements if
-                                (element.type != rs_e.Type.context_front and
-                                 element.type != rs_e.Type.context_back)))
+        return self._get_constraints(self.pos_riboswitch,
+                                     (e for e in self.elements
+                                      if (e.type != rs_e.Type.context_front and
+                                          e.type != rs_e.Type.context_back)))
 
     def reset_repr(self):
-        """
-        Reset the string representation stored in ``Instance._str``.
-        """
+        """Reset the string representation."""
         try:
             del self._str
         except AttributeError:
             pass
+
+    def _get_constraints(self, (start, end), elements):
+        """
+        Get the structural (for both states) and sequential constraints
+        for the given riboswitch elements between position *start* and
+        *end*.
+        """
+        def get_base(pos, base):
+            if base == rna.BASES[rna.BaseId.UNSPEC]:
+                return seq[pos]
+            if rna.base_valid_IUPAC(getattr(rna.IUPAC_Id, seq[pos]),
+                                    getattr(rna.IUPAC_Id, base)):
+                return base
+            if seq[pos] != base:
+                raise ValueError("Overlapping bases at position %i not valid "
+                                 "%s vs. %s" % (pos, seq[pos], base))
+
+        def get_struct_element(state, pos, struct_element):
+            struct_element_old = structs[state][pos]
+            if struct_element_old == rna.STRUCT_ELEM_UNSPEC:
+                return struct_element
+            else:
+                return struct_element_old
+
+        length = end - start
+        seq = [rna.BASES[rna.BaseId.UNSPEC]] * length
+        structs = ([rna.STRUCT_ELEM_UNSPEC] * length,
+                   [rna.STRUCT_ELEM_UNSPEC] * length)
+
+        for e in elements:
+            # clip the element's position into the start-end range
+            e_start = e.pos[0] if e.pos[0] > start else start
+            e_end = e.pos[1] if e.pos[1] < end else end
+            # get element specific indices
+            i = e_start - start
+            j = e_end - start
+            # handle element according to its type
+            if e.type == rs_e.Type.hairpin:
+                structs[e.state][i:j] = (
+                    get_struct_element(e.state, pos, e.struct[pos - i])
+                    for pos in xrange(i, j))
+            elif e.type == rs_e.Type.aptamer:
+                seq[i:j] = (get_base(pos, e.seq[pos - i])
+                            for pos in xrange(i, j))
+                structs[e.state][i:j] = (
+                    get_struct_element(e.state, pos, e.struct[pos - i])
+                    for pos in xrange(i, j))
+            elif (e.type == rs_e.Type.target_site or
+                  e.type == rs_e.Type.seq_constraint):
+                seq[i:j] = (get_base(pos, e.seq[pos - i])
+                            for pos in xrange(i, j))
+            elif (e.type == rs_e.Type.context_front or
+                  e.type == rs_e.Type.context_back):
+                seq[i:j] = (get_base(pos, e.seq[pos - i])
+                            for pos in xrange(i, j))
+
+        return (''.join(structs[0]), ''.join(structs[1])), ''.join(seq)
