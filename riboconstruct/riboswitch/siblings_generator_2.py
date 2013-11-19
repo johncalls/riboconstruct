@@ -23,7 +23,7 @@ class SimpleSiblingsGenerator(object):
     def __init__(self, parent):
         self.parent = parent
 
-        rs_elements = self.parent.elements
+        rs_elements = self.parent._elements
         self.hairpins = rs_elements[rs_e.Type.hairpin]
         if self.hairpins[0].state != 0:
             self.hairpins = [self.hairpins[1], self.hairpins[0]]

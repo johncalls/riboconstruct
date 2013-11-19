@@ -16,7 +16,7 @@ class SimpleSiblingsGenerator(object):
     def __init__(self, parent):
         self.parent = parent
 
-        rs_es = self.parent.elements
+        rs_es = self.parent._elements
         self.hairpins = rs_es[rs_e.Type.hairpin]
         if self.hairpins[0].state != 0:
             self.hairpins = [self.hairpins[1], self.hairpins[0]]
@@ -37,7 +37,7 @@ class SimpleSiblingsGenerator(object):
             yield sibling
 
         # alter the functional site size
-        if not len(self.parent.elements[rs_e.Type.context_front]):
+        if not len(self.parent._elements[rs_e.Type.context_front]):
             # increase
             if self.valid_fs_shift_down():
                 sibling = self.parent.copy()

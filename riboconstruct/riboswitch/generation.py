@@ -70,7 +70,7 @@ class InstanceSpace(object):
         self._current_instance = instance
         self._elements = dict()
         # rearrange riboswitch elements by their identifiers
-        for element in instance.elements:
+        for element in instance._elements:
             if element.state is None:
                 ident = str(element.ident)
             else:
