@@ -25,10 +25,8 @@ def iter_riboswitch(config):
         >Restriction_site|0,10
         AUGAGUAUGU
         >Context_front|-45,0
-        .............................................
         AAGCUAUACCAAGCAUACAAUCAACUCCAAGCUAGAUCUCUUAAG
         >Context_back|103,148
-        .............................................
         AUCUAGCGCUGGUACCAUCCCAUUUAACUGUAAGAAGAAUUGCAC
 
     Read file: ::
@@ -92,15 +90,13 @@ def iter_riboswitch(config):
                     raise ValueError("Restriction site element has wrong size.")
                 yield rs_e.TargetSite(pos, seq)
             elif re_type == rs_e.Type.context_front:
-                struct = rna.Structure(line)
-                seq = rna.IUPACSequence(next().upper())
-                if pos[1] - pos[0] != len(struct) != len(seq):
+                seq = rna.IUPACSequence(line)
+                if pos[1] - pos[0] != len(seq):
                     raise ValueError("Context front element has wrong size.")
                 yield rs_e.ContextFront(pos, seq)
             elif re_type == rs_e.Type.context_back:
-                struct = rna.Structure(line)
-                seq = rna.IUPACSequence(next().upper())
-                if pos[1] - pos[0] != len(struct) != len(seq):
+                seq = rna.IUPACSequence(line)
+                if pos[1] - pos[0] != len(seq):
                     raise ValueError("Context back element has wrong size.")
                 yield rs_e.ContextBack(pos, seq)
             elif re_type == rs_e.Type.seq:
@@ -212,9 +208,6 @@ def get_constraints((start, end), riboswitch_elements):
         else:  # context_front or context_back
             for pos in xrange(i, j):
                 set_base(pos, rs_elem.seq[pos - i])
-                set_struct_elem(rs_e.State.bound, pos, rs_elem.struct[pos - i])
-                set_struct_elem(rs_e.State.unbound, pos,
-                                rs_elem.struct[pos - i])
 
     return (''.join(structs[0]), ''.join(structs[1])), ''.join(seq)
 

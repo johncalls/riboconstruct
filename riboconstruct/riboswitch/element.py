@@ -179,7 +179,7 @@ class TargetSite(Element):
 
 class Context(Element):
     def __init__(self, m_type, pos, seq):
-        super(Context, self).__init__(m_type, None, pos, seq)
+        super(Context, self).__init__(m_type, None, pos, None, seq)
 
 
 class ContextFront(Context):
