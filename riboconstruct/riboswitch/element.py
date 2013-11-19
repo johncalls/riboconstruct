@@ -50,7 +50,7 @@ Struct-like representation of the riboswitch element types. (See
 FUNCTIONAL_SITE_TYPES = set((Type.hairpin, Type.restriction_site))
 
 
-class RiboswitchElement(object):
+class Element(object):
     def __init__(self, m_type, state, pos, struct, seq=None):
         self.type = m_type
         self.state = state
@@ -59,7 +59,7 @@ class RiboswitchElement(object):
         self.seq = seq
 
 
-class Aptamer(RiboswitchElement):
+class Aptamer(Element):
     ident = "A"
 
     def __init__(self, state, pos, struct, seq):
@@ -72,7 +72,7 @@ class Aptamer(RiboswitchElement):
             self.pos[0], self.pos[1], str(self.struct), str(self.seq))
 
 
-class Hairpin(RiboswitchElement):
+class Hairpin(Element):
     ident = "H"
 
     def __init__(self, state, pos, struct):
@@ -140,7 +140,7 @@ class Hairpin(RiboswitchElement):
         return Hairpin(self.state, pos, struct)
 
 
-class AccessConstraint(RiboswitchElement):
+class AccessConstraint(Element):
     ident = "AC"
 
     def __init__(self, pos, seq):
@@ -153,7 +153,7 @@ class AccessConstraint(RiboswitchElement):
                 self.ident, self.pos[0], self.pos[1], str(self.seq)))
 
 
-class TargetSite(RiboswitchElement):
+class TargetSite(Element):
     ident = "TS"
 
     def __init__(self, pos, seq):
@@ -172,7 +172,7 @@ class TargetSite(RiboswitchElement):
         return TargetSite(pos, self.seq)
 
 
-class Context(RiboswitchElement):
+class Context(Element):
     def __init__(self, m_type, pos, struct, seq):
         super(Context, self).__init__(m_type, None, pos, struct, seq)
 
@@ -209,7 +209,7 @@ class ContextBack(Context):
             self.pos[0], self.pos[1], str(self.struct), str(self.seq))
 
 
-class SequenceConstraint(RiboswitchElement):
+class SequenceConstraint(Element):
     ident = "SC"
 
     def __init__(self, pos, seq):
