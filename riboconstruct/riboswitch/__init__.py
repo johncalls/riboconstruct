@@ -90,7 +90,7 @@ def iter_riboswitch(config):
                 seq = rna.IUPACSequence(line.upper())
                 if pos[1] - pos[0] != len(seq):
                     raise ValueError("Restriction site element has wrong size.")
-                yield rs_e.RestrictionSite(pos, seq)
+                yield rs_e.TargetSite(pos, seq)
             elif re_type == rs_e.Type.context_front:
                 struct = rna.Structure(line)
                 seq = rna.IUPACSequence(next().upper())
@@ -233,7 +233,7 @@ def get_riboswitch_from_str(riboswitch_str):
             pos = eval(rs_elem[1])
             if type_ == "RS":
                 seq = rna.Sequence(eval(rs_elem[2]))
-                riboswitch.add(rs_e.RestrictionSite(pos, seq))
+                riboswitch.add(rs_e.TargetSite(pos, seq))
             elif type_ == "Cf":
                 struct = rna.Structure(eval(rs_elem[2]))
                 seq = rna.Sequence(eval(rs_elem[3]))
@@ -763,13 +763,13 @@ class Riboswitch(object):
         ### validate the restriction site ######################################
         restriction_site = (
             self.elements[rs_e.Type.restriction_site])
-        # check if builder contains another RestrictionSite
+        # check if builder contains another TargetSite
         if len(restriction_site) != 1:
             raise ValueError(
-                "Riboswitch contains no or too many RestrictionSite "
+                "Riboswitch contains no or too many TargetSite "
                 "elements.")
         restriction_site = restriction_site[0]
-        # check if the RestrictionSite intersects with the context front
+        # check if the TargetSite intersects with the context front
         if len(self.elements[rs_e.Type.context_front]):
             context_front = (
                 self.elements[rs_e.Type.context_front][0])

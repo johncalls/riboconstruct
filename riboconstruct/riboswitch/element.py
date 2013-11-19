@@ -60,6 +60,8 @@ class RiboswitchElement(object):
 
 
 class Aptamer(RiboswitchElement):
+    ident = "A"
+
     def __init__(self, state, pos, struct, seq):
         super(Aptamer, self).__init__(
             Type.aptamer, state, pos, struct, seq)
@@ -71,6 +73,8 @@ class Aptamer(RiboswitchElement):
 
 
 class Hairpin(RiboswitchElement):
+    ident = "H"
+
     def __init__(self, state, pos, struct):
         super(Hairpin, self).__init__(
             Type.hairpin, state, pos, rna.Structure(struct))
@@ -137,7 +141,7 @@ class Hairpin(RiboswitchElement):
 
 
 class AccessConstraint(RiboswitchElement):
-    ident = "Acc"
+    ident = "AC"
 
     def __init__(self, pos, seq):
         super(AccessConstraint, self).__init__(
@@ -149,9 +153,11 @@ class AccessConstraint(RiboswitchElement):
                 self.ident, self.pos[0], self.pos[1], str(self.seq)))
 
 
-class RestrictionSite(RiboswitchElement):
+class TargetSite(RiboswitchElement):
+    ident = "TS"
+
     def __init__(self, pos, seq):
-        super(RestrictionSite, self).__init__(
+        super(TargetSite, self).__init__(
             Type.restriction_site, None, pos, None, seq)
 
     def __repr__(self):
@@ -159,11 +165,11 @@ class RestrictionSite(RiboswitchElement):
 
     def shift_down(self, num_pos=1):
         pos = self.pos[0] - num_pos, self.pos[1] - num_pos
-        return RestrictionSite(pos, self.seq)
+        return TargetSite(pos, self.seq)
 
     def shift_up(self, num_pos=1):
         pos = self.pos[0] + num_pos, self.pos[1] + num_pos
-        return RestrictionSite(pos, self.seq)
+        return TargetSite(pos, self.seq)
 
 
 class Context(RiboswitchElement):
@@ -172,6 +178,8 @@ class Context(RiboswitchElement):
 
 
 class ContextFront(Context):
+    ident = "Cf"
+
     def __init__(self, pos, struct, seq):
         super(ContextFront, self).__init__(
             Type.context_front, pos, struct, seq)
@@ -190,6 +198,8 @@ class ContextFront(Context):
 
 
 class ContextBack(Context):
+    ident = "Cb"
+
     def __init__(self, pos, struct, seq):
         super(ContextBack, self).__init__(
             Type.context_back, pos, struct, seq)
@@ -200,6 +210,8 @@ class ContextBack(Context):
 
 
 class SequenceConstraint(RiboswitchElement):
+    ident = "SC"
+
     def __init__(self, pos, seq):
         super(SequenceConstraint, self).__init__(
             Type.seq, None, pos, None, seq)
