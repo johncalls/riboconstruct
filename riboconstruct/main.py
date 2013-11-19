@@ -77,7 +77,7 @@ def evaluate_riboswitch(riboswitch_id, riboswitch, parent_folder):
     riboswitch_folder = os.path.join(parent_folder, str(riboswitch_id))
     os.mkdir(riboswitch_folder)
     # generate the hairpin's sequence
-    constraints_fs = riboswitch.get_constraints_functional_site()
+    constraints_fs = riboswitch.get_constraints_riboswitch()
     seqs_info = inverse_fold.generate_sequences(*constraints_fs)
     # evaluate the current riboswitch for the calculated sequences
     for seq_id, (sequence, cost, steps) in enumerate(seqs_info):
