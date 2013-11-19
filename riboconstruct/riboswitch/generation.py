@@ -64,7 +64,8 @@ class InstanceSpace(object):
         subclass, if the identifiers defined in this method are not
         sufficient.
         """
-        if instance == self._current_instance:
+        if (self._current_instance is not None and
+            instance == self._current_instance):
             return
         self._current_instance = instance
         self._elements = dict()
