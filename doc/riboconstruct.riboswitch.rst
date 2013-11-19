@@ -15,33 +15,16 @@ element
 ^^^^^^^
 
 .. automodule:: riboconstruct.riboswitch.element
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
 
-generator
-^^^^^^^^^
+generation
+^^^^^^^^^^
 
-.. automodule:: riboconstruct.riboswitch.generator
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-siblings_generator
-^^^^^^^^^^^^^^^^^^
-
-.. automodule:: riboconstruct.riboswitch.siblings_generator
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-siblings_generator_2
-^^^^^^^^^^^^^^^^^^^^
-
-.. automodule:: riboconstruct.riboswitch.siblings_generator_2
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
+.. automodule:: riboconstruct.riboswitch.generation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
