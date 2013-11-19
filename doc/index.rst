@@ -1,10 +1,11 @@
 .. _multiprocessing system: http://en.wikipedia.org/wiki/Multiprocessing
+.. _riboswitches: http://en.wikipedia.org/wiki/Riboswitch
 
 ===========================================================
 :mod:`riboconstruct` --- Generate and evaluate riboswitches
 ===========================================================
 
-This module provides methods and techniques to generate riboswitch instances for a given model and evaluate these instances with respect to their folding behaviour.
+This module provides methods and techniques to generate `riboswitches`_ for a given model and evaluate these with respect to their folding behaviour.
 
 :mod:`riboconstruct` is mainly based on two subpackages:
 

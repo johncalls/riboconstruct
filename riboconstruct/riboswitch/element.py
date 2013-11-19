@@ -102,16 +102,6 @@ class Hairpin(Element):
         return '(%s_%s %s "%s")' % (self.ident, State.get_str(self.state),
                                     self.pos, str(self.struct))
 
-    # TODO: get rid of
-    def shift_down(self, num_pos=1):
-        pos = self.pos[0] - num_pos, self.pos[1] - num_pos
-        return Hairpin(self.state, pos, self.struct)
-
-    # TODO: get rid of
-    def shift_up(self, num_pos=1):
-        pos = self.pos[0] + num_pos, self.pos[1] + num_pos
-        return Hairpin(self.state, pos, self.struct)
-
     def shift(self, num_pos=1):
         """
         Returns a new hairpin shifted upstream by *num_pos* positions,
