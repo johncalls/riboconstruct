@@ -1,4 +1,5 @@
 import copy
+import json
 import sys
 
 from . import element as rs_e
@@ -115,6 +116,21 @@ def iter_riboswitch(config):
             re_type = None
         else:
             raise ValueError("Config has wrong format.")
+
+
+def deserialize(r):
+    def as_riboswitch(dct):
+        if "_obj" in dct and dct["_obj"] == "riboswitch":
+            riboswitch = Riboswitch()
+            riboswitch.elements = set(rs_e.deserialize(element)
+                                      for element in dct["elements"])
+            pos = dct["pos"]
+            riboswitch.pos = [int(pos[0]), int(pos[1])]
+            pos = dct["pos_riboswitch"]
+            riboswitch.pos_riboswitch = [int(pos[0]), int(pos[1])]
+            return riboswitch
+        else:
+            return dct
 
 
 def get_riboswitch_from_config_file(config_file, validator=None):
@@ -403,3 +419,14 @@ class Riboswitch(object):
                             for pos in xrange(i, j))
 
         return (''.join(structs[0]), ''.join(structs[1])), ''.join(seq)
+
+
+    def serialize(self):
+        d = dict()
+        sorted_elements = sorted(self.elements,
+                                 key=lambda e: (e.type, e.state, e.pos))
+        d["_obj"] = "riboswitch"
+        d["elements"] = list(e.serialize() for e in sorted_elements)
+        d["pos"] = self.pos
+        d["pos_riboswitch"] = self.pos_riboswitch
+        return json.dumps(d)

@@ -1,3 +1,4 @@
+import json
 import types
 
 from ..helper import enum
@@ -49,6 +50,35 @@ Struct-like representation of the riboswitch element types. (See
 EXPRESSION_PLATFORM_TYPES = set((Type.hairpin, Type.target_site))
 
 
+def deserialize(e):
+    def as_element(dct):
+        if "_obj" in dct and dct["_obj"] == "element":
+            type_ = dct["type"]
+            pos = dct["pos"]
+            if type_ == Type.aptamer:
+                return Aptamer(int(dct["state"]), (int(pos[0]), int(pos[1])),
+                               dct["struct"], dct["seq"])
+            elif type_ == Type.hairpin:
+                return Hairpin(int(dct["state"]), (int(pos[0]), int(pos[1])),
+                               dct["struct"])
+            elif type_ == Type.target_site:
+                return TargetSite((int(pos[0]), int(pos[1])), dct["seq"])
+            elif type_ == Type.context_front:
+                return ContextFront((int(pos[0]), int(pos[1])), dct["seq"])
+            elif type_ == Type.context_back:
+                return ContextBack((int(pos[0]), int(pos[1])), dct["seq"])
+            elif type_ == Type.seq_constraint:
+                return SequenceConstraint((int(pos[0]), int(pos[1])),
+                                          dct["seq"])
+            elif type_ == Type.access_constraint:
+                return AccessConstraint((int(pos[0]), int(pos[1])))
+            else:
+                return dct
+        return dct
+
+    return json.loads(e, object_hook=as_element)
+
+
 class Element(object):
     """Base class of the different riboswitch element types."""
 
@@ -59,6 +89,12 @@ class Element(object):
         self.pos = pos
         self.struct = struct
         self.seq = seq
+
+    def serialize(self):
+        self.__dict__["_obj"] = "element"
+        self.__dict__["type"] = self.type
+        self.__dict__["ident"] = self.ident
+        return json.dumps(self.__dict__)
 
 
 class Aptamer(Element):
