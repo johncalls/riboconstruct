@@ -257,6 +257,10 @@ class InstanceIterator(object):
     Uses a riboswitch instance space object and an initial riboswitch
     instance to iterate over all valid instances within the constraints
     defined by the instance space.
+
+    In each iteration step, the id of the parent the current riboswitch
+    is derived from, the id of the current riboswitch and the current
+    riboswitch are returned.
     """
 
     __all__ = ["next"]
@@ -265,8 +269,9 @@ class InstanceIterator(object):
         self._instance_space = instance_space
         self._closed_list = set()
         self._open_list = collections.deque()
+        self._id = 0
 
-        self._open_list.append(initial_instance)
+        self._open_list.append((-1, initial_instance))
 
     def __iter__(self):
         return self
@@ -275,13 +280,15 @@ class InstanceIterator(object):
         """Defines how to iterate over all possible riboswitches."""
         if not len(self._open_list):
            raise StopIteration("No more new riboswitches.")
-        riboswitch = self._open_list.popleft()
+        parent_id, riboswitch = self._open_list.popleft()
+        riboswitch_id = self._id
         for sibling in self._instance_space.iter_alterations(riboswitch):
             if sibling in self._closed_list:
                 continue
+            self._id += 1
             self._closed_list.add(sibling)
-            self._open_list.append(sibling)
-        return riboswitch
+            self._open_list.append((riboswitch_id, sibling))
+        return parent_id, riboswitch_id, riboswitch
 
 
 class SpliceSiteInstanceSpace(InstanceSpace):
