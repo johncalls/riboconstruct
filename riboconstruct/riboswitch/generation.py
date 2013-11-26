@@ -222,8 +222,11 @@ class ActionContainer(object):
         try:
             self._container[target_ident][action].append(constraint)
         except KeyError:
-            self._container[target_ident] = dict()
-            self._container[target_ident][action] = [constraint]
+            try:
+                self._container[target_ident][action] = [constraint]
+            except KeyError:
+                self._container[target_ident] = dict()
+                self._container[target_ident][action] = [constraint]
 
     def iter_target_identifiers(self):
         """Iterate all target identifiers."""
