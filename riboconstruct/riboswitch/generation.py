@@ -36,8 +36,8 @@ class InstanceSpace(object):
     subclasses of :class:`InstanceSpace`.
     """
 
-    __all__ = ["validate", "register", "create_evaluation_files",
-               "iter_alterations"]
+    __all__ = ["validate", "get_detailed_validation", "register",
+               "create_evaluation_files", "iter_alterations"]
 
     def __init__(self):
         self._current_instance = None
@@ -59,14 +59,21 @@ class InstanceSpace(object):
                    for (constraint, c_args, inverse), _
                    in self._actions.iter_all_constraints())
 
-    def print_validation(self, instance):
-        print "The following constraints failed:"
+    def get_detailed_validation(self, instance):
+        """
+        Returns a :class:`string` containing detailed information which
+        of the defined constraints failed for *instance*.
+        """
+        s = []
+        self.register(instance)
+        s.append("The following constraints failed:")
         for c, descr in set(self._actions.iter_all_constraints()):
             constraint, c_args, inverse = c
             result = (constraint(*c_args) if not inverse else
                       not constraint(*c_args))
             if not result:
-                print '-', descr
+                s.append('- %s' % descr)
+        return '\n'.join(s)
 
     def register(self, instance):
         """
@@ -319,8 +326,8 @@ class SpliceSiteInstanceSpace(InstanceSpace):
     site (cf. with the evaluation section in the master thesis).
     """
 
-    __all__ = ["iter_alterations", "validate", "create_evaluation_files",
-               "register"]
+    __all__ = ["iter_alterations", "validate", "get_detailed_validation",
+               "create_evaluation_files", "register"]
 
     def __init__(self,
                  hairpin_stem_size=(7, 20),
