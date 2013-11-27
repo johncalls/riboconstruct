@@ -300,7 +300,7 @@ class InstanceIterator(object):
         self._open_list = collections.deque()
         self._id = 0
 
-        self._open_list.append((-1, initial_instance))
+        self._open_list.append((-1, 0, initial_instance))
 
     def __iter__(self):
         return self
@@ -309,14 +309,13 @@ class InstanceIterator(object):
         """Defines how to iterate over all possible riboswitches."""
         if not len(self._open_list):
            raise StopIteration("No more new riboswitches.")
-        parent_id, riboswitch = self._open_list.popleft()
-        riboswitch_id = self._id
+        parent_id, riboswitch_id, riboswitch = self._open_list.popleft()
         for i, sibling in enumerate(self._instance_space.iter_alterations(riboswitch)):
             if sibling in self._closed_list:
                 continue
             self._id += 1
+            self._open_list.append((riboswitch_id, self._id, sibling))
             self._closed_list.add(sibling)
-            self._open_list.append((riboswitch_id, sibling))
         return parent_id, riboswitch_id, riboswitch
 
 
