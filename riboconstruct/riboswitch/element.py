@@ -1,5 +1,6 @@
 import types
 
+from .. import rna
 from ..helper import enum
 
 
@@ -123,7 +124,7 @@ class Hairpin(Element):
         struct.insert(new_bp_pos_i, '(')
         struct.insert(new_bp_pos_j, ')')
         pos = self.pos[0] - 1, self.pos[1] + 1
-        return Hairpin(self.state, pos, struct)
+        return Hairpin(self.state, pos, rna.Structure(struct))
 
     def insert_bp_before(self, bp_pos_id=0):
         """
@@ -141,7 +142,7 @@ class Hairpin(Element):
         struct.insert(new_bp_pos_i, '(')
         struct.insert(new_bp_pos_j, ')')
         pos = self.pos[0] - 1, self.pos[1] + 1
-        return Hairpin(self.state, pos, struct)
+        return Hairpin(self.state, pos, rna.Structure(struct))
 
     def remove_bp(self, bp_pos_id=0):
         """
@@ -153,7 +154,7 @@ class Hairpin(Element):
         del struct[bp_pos_i]
         del struct[bp_pos_j - 1]
         pos = self.pos[0] + 1, self.pos[1] - 1
-        return Hairpin(self.state, pos, struct)
+        return Hairpin(self.state, pos, rna.Structure(struct))
 
     def insert_b(self, pos):
         """
@@ -163,7 +164,7 @@ class Hairpin(Element):
         struct = self.struct[:]
         struct.insert(pos, '.')
         pos = self.pos[0], self.pos[1] + 1
-        return Hairpin(self.state, pos, struct)
+        return Hairpin(self.state, pos, rna.Structure(struct))
 
     def remove_b(self, pos):
         """
@@ -173,7 +174,7 @@ class Hairpin(Element):
         struct = self.struct[:]
         del struct[pos]
         pos = self.pos[0], self.pos[1] - 1
-        return Hairpin(self.state, pos, struct)
+        return Hairpin(self.state, pos, rna.Structure(struct))
 
 
 class TargetSite(Element):
