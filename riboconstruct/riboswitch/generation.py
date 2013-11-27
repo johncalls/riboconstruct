@@ -144,7 +144,9 @@ class InstanceSpace(object):
         """
         a = self._elements[ident_a]
         b = self._elements[ident_b]
-        return a.pos[1] > b.pos[0] or a.pos[0] < b.pos[1]
+        if a.pos[1] <= b.pos[0] or a.pos[0] >= b.pos[1]:
+            return False
+        return True
 
     def _matching(self, ident_a, ident_b):
         """
