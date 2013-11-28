@@ -11,6 +11,11 @@ PATTERN_FILE_NAME = "pattern.p"
 
 
 def write_to_file(file_, *out):
+    """
+    Writes a variable number of function arguments to *file_*.
+
+    Raises an :exc:`~exceptions.IOError` if *file_* exists.
+    """
     if os.path.isfile(file_):
         raise IOError("File '%s' already exists." % file_)
     with open(file_, 'w') as f:
@@ -31,8 +36,8 @@ class InstanceSpace(object):
     subclasses of :class:`InstanceSpace`.
     """
 
-    __all__ = ["validate", "register", "create_evaluation_files",
-               "iter_alterations"]
+    __all__ = ["validate", "get_detailed_validation", "register",
+               "create_evaluation_files", "iter_alterations"]
 
     def __init__(self):
         self._current_instance = None
@@ -44,22 +49,38 @@ class InstanceSpace(object):
         Validates the riboswitch *instance* according to the defined
         constraints.
 
-        Overwrite this method in the specific ``InstanceSpace``
+        Overwrite this method in the specific :class:`InstanceSpace`
         subclass, if the validation defined in this method is not
         sufficient.
         """
         self.register(instance)
         return all(constraint(*c_args) if not inverse else
                    not constraint(*c_args)
-                   for constraint, c_args, inverse
+                   for (constraint, c_args, inverse), _
                    in self._actions.iter_all_constraints())
+
+    def get_detailed_validation(self, instance):
+        """
+        Returns a :class:`string` containing detailed information which
+        of the defined constraints failed for *instance*.
+        """
+        s = []
+        self.register(instance)
+        s.append("The following constraints failed:")
+        for c, descr in set(self._actions.iter_all_constraints()):
+            constraint, c_args, inverse = c
+            result = (constraint(*c_args) if not inverse else
+                      not constraint(*c_args))
+            if not result:
+                s.append('- %s' % descr)
+        return '\n'.join(s)
 
     def register(self, instance):
         """
         Rearranges the elements of the riboswitch *instance* such that
         they are accessible by an unique identifier.
 
-        Overwrite this method in the specific ``InstanceSpace``
+        Overwrite this method in the specific :class:`InstanceSpace`
         subclass, if the identifiers defined in this method are not
         sufficient.
         """
@@ -71,17 +92,18 @@ class InstanceSpace(object):
         # rearrange riboswitch elements by their identifiers
         for element in instance.elements:
             if element.state is None:
-                ident = str(element.ident)
+                ident = element.ident
             else:
-                ident = "%s_%s" % (element.ident, element.state)
+                ident = "%s_%s" % (element.ident,
+                                   rs_e.State.get_str(element.state))
             self._elements[ident] = element
         # if there are no context elements, add dummies
         if rs_e.ContextFront.ident not in instance.elements:
-            pos = (instance.pos_instance[0], instance.pos_riboswitch[0])
+            pos = (instance.pos_riboswitch[0], instance.pos_riboswitch[0])
             cf = rs_e.ContextFront(pos, ())
             self._elements[cf.ident] = cf
         if rs_e.ContextBack.ident not in instance.elements:
-            pos = (instance.pos_riboswitch[1], instance.pos_instance[1])
+            pos = (instance.pos_riboswitch[1], instance.pos_riboswitch[1])
             cb = rs_e.ContextBack(pos, ())
             self._elements[cb.ident] = cb
 
@@ -91,7 +113,7 @@ class InstanceSpace(object):
         riboswitch *instance*.
 
         The functionality has to be defined in the specific
-        ``InstanceSpace`` subclass.
+        :class:`InstanceSpace` subclass.
         """
         raise NotImplementedError
 
@@ -104,7 +126,7 @@ class InstanceSpace(object):
         def constraints_fulfilled(target_ident, action):
             return all(constraint(*c_args) if not inverse else
                        not constraint(*c_args)
-                       for constraint, c_args, inverse
+                       for (constraint, c_args, inverse), _
                        in self._actions.iter_constraints(target_ident, action))
 
         self.register(instance)
@@ -194,7 +216,7 @@ class ActionContainer(object):
     def __init__(self):
         self._container = dict()
 
-    def add(self, target_ident, action, constraint):
+    def add(self, target_ident, action, constraint, descr=None):
         """
         Add an action which is only performed for a specific target if
         the specified constraint is fulfilled to the container.
@@ -218,17 +240,20 @@ class ActionContainer(object):
         or not (``inverse = True``). Several constraints can be added
         for the same target and action, and each is checked before the
         action is performed.
+
+        *descr* is a short human readable description of each
+        target-action-constraint triple.
         """
         if len(constraint) == 2:
             constraint = constraint + (False,)
         try:
-            self._container[target_ident][action].append(constraint)
+            self._container[target_ident][action].append((constraint, descr))
         except KeyError:
             try:
-                self._container[target_ident][action] = [constraint]
+                self._container[target_ident][action] = [(constraint, descr)]
             except KeyError:
                 self._container[target_ident] = dict()
-                self._container[target_ident][action] = [constraint]
+                self._container[target_ident][action] = [(constraint, descr)]
 
     def iter_target_identifiers(self):
         """Iterate all target identifiers."""
@@ -240,16 +265,20 @@ class ActionContainer(object):
 
     def iter_constraints(self, target_ident, action):
         """
-        Iterate all constraints added for a specific target and action.
+        Iterate all constraint-description pairs for a specific target
+        and action.
         """
         return iter(self._container[target_ident][action])
 
     def iter_all_constraints(self):
-        """Iterate all defined constraints."""
+        """
+        Iterate all defined target-action-constraint triples and yield
+        the constraint and description for each triple."""
         for target_ident in self.iter_target_identifiers():
             for action in self.iter_actions(target_ident):
-                for constraint in self.iter_constraints(target_ident, action):
-                    yield constraint
+                for constraint, descr in self.iter_constraints(target_ident,
+                                                               action):
+                    yield constraint, descr
 
 
 class InstanceIterator(object):
@@ -271,7 +300,7 @@ class InstanceIterator(object):
         self._open_list = collections.deque()
         self._id = 0
 
-        self._open_list.append((-1, initial_instance))
+        self._open_list.append((-1, 0, initial_instance))
 
     def __iter__(self):
         return self
@@ -280,14 +309,13 @@ class InstanceIterator(object):
         """Defines how to iterate over all possible riboswitches."""
         if not len(self._open_list):
            raise StopIteration("No more new riboswitches.")
-        parent_id, riboswitch = self._open_list.popleft()
-        riboswitch_id = self._id
-        for sibling in self._instance_space.iter_alterations(riboswitch):
+        parent_id, riboswitch_id, riboswitch = self._open_list.popleft()
+        for i, sibling in enumerate(self._instance_space.iter_alterations(riboswitch)):
             if sibling in self._closed_list:
                 continue
             self._id += 1
+            self._open_list.append((riboswitch_id, self._id, sibling))
             self._closed_list.add(sibling)
-            self._open_list.append((riboswitch_id, sibling))
         return parent_id, riboswitch_id, riboswitch
 
 
@@ -297,8 +325,8 @@ class SpliceSiteInstanceSpace(InstanceSpace):
     site (cf. with the evaluation section in the master thesis).
     """
 
-    __all__ = ["iter_alterations", "validate", "create_evaluation_files",
-               "register"]
+    __all__ = ["iter_alterations", "validate", "get_detailed_validation",
+               "create_evaluation_files", "register"]
 
     def __init__(self,
                  hairpin_stem_size=(7, 20),
@@ -315,212 +343,252 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         expression platform of the riboswitch.
         """
         super(SpliceSiteInstanceSpace, self).__init__()
-        # store the evaluation pattern
-        self._evaluation_patterns = [None, None]
-        # bound case
-        self._evaluation_patterns[rs_e.State.bound] = (
-            "({}|%%s%%s#%%s%s&%%s%%s|1)" % unichr(167).encode("utf-8"))
-        # unbound case
-        self._evaluation_patterns[rs_e.State.unbound] = (
-            "({}|%%s%%s#%%s%s%%s#%%s%%s|1)" % unichr(167).encode("utf-8"))
-        self._evaluation_patterns = tuple(self._evaluation_patterns)
         # specify target identifiers
-        h_b = "%s_%s" % (rs_e.Hairpin.ident, rs_e.State.bound)
-        h_ub = "%s_%s" % (rs_e.Hairpin.ident, rs_e.State.unbound)
-        a_b = "%s_%s" % (rs_e.Aptamer.ident, rs_e.State.bound)
-        a_ub = "%s_%s" % (rs_e.Aptamer.ident, rs_e.State.unbound)
-        ts = str(rs_e.TargetSite.ident)
-        cf = str(rs_e.ContextFront.ident)
-        # cb = str(rs_e.ContextBack.ident)
-        b1_2_ac = "%s_%s" % ("b1_2", str(rs_e.AccessConstraint.ident))
+        b_str  = rs_e.State.get_str(rs_e.State.bound)
+        ub_str = rs_e.State.get_str(rs_e.State.unbound)
+        self._h_b = "%s_%s" % (rs_e.Hairpin.ident, b_str)
+        self._h_ub = "%s_%s" % (rs_e.Hairpin.ident, ub_str)
+        self._a_b = "%s_%s" % (rs_e.Aptamer.ident, b_str)
+        self._a_ub = "%s_%s" % (rs_e.Aptamer.ident, ub_str)
+        self._ts = str(rs_e.TargetSite.ident)
+        self._cf = str(rs_e.ContextFront.ident)
+        self._cb = str(rs_e.ContextBack.ident)
+        self._b1_2_ac = "b1_2_%s" % str(rs_e.AccessConstraint.ident)
         # ==============================================================
         # define actions and constraints
         # ==============================================================
         # all constraints are in the following format:
         #
         # self._actions.add(
-        #   (h_b,),                          # target_ident
-        #   ("shift", (1,)),      # action
-        #   (self._matching, (h_b, ts, 1)))  # constraint
+        #   (self._h_b,),                               # target_ident
+        #   ("shift", (1,)),                           # action
+        #   (self._matching, (self._h_b, self._ts, 1)),  # constraint
+        #   "descr")                                   # descr
         # --------------------------------------------------------------
         # sequestor - shift up
         # --------------------------------------------------------------
-        self._actions.add((h_b,),
-                         ("shift", (1,)),
-                         (self._matching, (h_b, ts)))
-        self._actions.add((h_b,),
-                         ("shift", (1,)),
-                         (self._overlapping, (h_b, ts)))
-        self._actions.add((h_b,),
-                         ("shift", (1,)),
-                         (self._overlapping, (h_b, a_b), True))
-        self._actions.add((h_b,),
-                         ("shift", (-1,)),
-                         (lambda h_b, h_ub: self.element(h_b).pos[0] <
-                                            self.element(h_ub).pos[0],
-                          (h_b, h_ub)))
+        self._actions.add((self._h_b,),
+                          ("shift", (1,)),
+                          (self._matching, (self._h_b, self._ts)),
+                          "h_b, ts, formed bps are valid")
+        self._actions.add((self._h_b,),
+                          ("shift", (1,)),
+                          (self._overlapping, (self._h_b, self._ts)),
+                          "h_b, ts: overlapping")
+        self._actions.add((self._h_b,),
+                          ("shift", (1,)),
+                          (self._overlapping, (self._h_b, self._a_b), True),
+                          "h_b, a_b: not overlapping")
         # --------------------------------------------------------------
         # anti-sequestor - shift up
         # --------------------------------------------------------------
-        self._actions.add((h_ub,),
-                         ("shift", (1,)),
-                         (self._matching, (h_ub, ts)))
-        self._actions.add((h_ub,),
-                         ("shift", (1,)),
-                         (self._overlapping, (h_ub, a_ub), True))
-        self._actions.add((h_ub,),
-                         ("shift", (1,)),
-                         (self._within_dist, (h_ub, h_b, 0)))
-        self._actions.add((h_ub,),
-                         ("shift", (1,)),
-                         (self._within_dist, (h_ub, h_b, 0)))
+        self._actions.add((self._h_ub,),
+                          ("shift", (1,)),
+                          (self._matching, (self._h_ub, self._ts)),
+                          "h_ub, ts: formed bps are valid")
+        self._actions.add((self._h_ub,),
+                          ("shift", (1,)),
+                          (self._overlapping, (self._h_ub, self._a_ub), True),
+                          "h_ub, a_ub: not overlapping")
+        self._actions.add((self._h_ub,),
+                          ("shift", (1,)),
+                          (self._within_dist, (self._h_ub, self._h_b, 0)),
+                          "h_ub, h_b: within distance")
+        self._actions.add((self._h_ub,),
+                          ("shift", (1,)),
+                          (self._within_dist, (self._h_ub, self._h_b, 0)),
+                          "h_ub, h_b: within distance")
         # should not overlap with the B1-2 region
-        self._actions.add((h_ub,),
-                         ("shift", (1,)),
-                         (self._overlapping, (h_ub, b1_2_ac), True))
+        self._actions.add((self._h_ub,),
+                          ("shift", (1,)),
+                          (self._overlapping, (self._h_ub, self._b1_2_ac),
+                           True),
+                          "h_ub, b1_2_ac: not overlapping")
         # --------------------------------------------------------------
         # sequestor - shift down
         # --------------------------------------------------------------
-        self._actions.add((h_b,),
-                         ("shift", (-1,)),
-                         (self._matching, (h_b, ts)))
-        self._actions.add((h_b,),
-                         ("shift", (-1,)),
-                         (self._within_dist, (h_b, h_ub, 0)))
+        self._actions.add((self._h_b,),
+                          ("shift", (-1,)),
+                          (self._matching, (self._h_b, self._ts)),
+                          "h_b, ts: formed bps are valid")
+        self._actions.add((self._h_b,),
+                          ("shift", (-1,)),
+                          (self._within_dist, (self._h_b, self._h_ub, 0)),
+                          "h_b, h_ub: within distance")
         # sequestor has to stay within expression platform
-        self._actions.add((h_b,),
-                         ("shift", (-1,)),
-                         (lambda h_b, cf: self.element(h_b).pos[0] >=
-                                          self.element(cf).pos[1],
-                          (h_b, cf)))
+        self._actions.add((self._h_b,),
+                          ("shift", (-1,)),
+                          (lambda h_b, cf: self.element(h_b).pos[0] >=
+                                           self.element(cf).pos[1],
+                           (self._h_b, self._cf)),
+                          "h_b, cf: cf not to the right of h_b")
+        self._actions.add((self._h_b,),
+                          ("shift", (-1,)),
+                          (lambda h_b, h_ub: self.element(h_b).pos[0] <
+                                             self.element(h_ub).pos[0],
+                           (self._h_b, self._h_ub)),
+                          "h_b, h_ub: h_b to the left of h_ub")
         # --------------------------------------------------------------
         # anti-sequestor - shift down
         # --------------------------------------------------------------
-        self._actions.add((h_ub,),
-                         ("shift", (-1,)),
-                         (self._matching, (h_ub, ts)))
-        self._actions.add((h_ub,),
-                         ("shift", (-1,)),
-                         (self._overlapping, (h_ub, ts), True))
-        self._actions.add((h_ub,),
-                         ("shift", (-1,)),
-                         (self._within_dist,
-                          (h_ub, a_b, ub_hairpin_aptamer_dist)))
-        self._actions.add((h_ub,),
-                         ("shift", (-1,)),
-                         (lambda h_ub, h_b: self.element(h_b).pos[0] <
-                                            self.element(h_ub).pos[0],
-                          (h_ub, h_b)))
+        self._actions.add((self._h_ub,),
+                          ("shift", (-1,)),
+                          (self._matching, (self._h_ub, self._ts)),
+                          "h_ub, ts: formed bps are valid")
+        self._actions.add((self._h_ub,),
+                          ("shift", (-1,)),
+                          (self._overlapping, (self._h_ub, self._ts), True),
+                          "h_ub, ts: not overlapping")
+        self._actions.add((self._h_ub,),
+                          ("shift", (-1,)),
+                          (self._within_dist,
+                           (self._h_ub, self._a_b, ub_hairpin_aptamer_dist)),
+                          "h_ub, a_b: within distance")
+        self._actions.add((self._h_ub,),
+                          ("shift", (-1,)),
+                          (lambda h_ub, h_b: self.element(h_b).pos[0] <
+                                             self.element(h_ub).pos[0],
+                           (self._h_ub, self._h_b)),
+                          "h_ub, h_b: h_b to the right of h_ub")
         # --------------------------------------------------------------
         # target site - shift up ---> decreases expression platform
         # --------------------------------------------------------------
-        self._actions.add((ts, cf),
-                         ("shift", (1,)),
-                         (self._overlapping, (ts, h_ub), True))
+        self._actions.add((self._ts, self._cf),
+                          ("shift", (1,)),
+                          (self._overlapping, (self._ts, self._h_ub), True),
+                          "ts, h_ub: not overlapping")
         # context front (!) and hairpin should not overlap
-        self._actions.add((ts, cf),
-                         ("shift", (1,)),
-                         (self._overlapping, (cf, h_b), True))
-        self._actions.add((ts, cf),
-                         ("shift", (1,)),
-                         (self._matching, (h_b, ts)))
+        self._actions.add((self._ts, self._cf),
+                          ("shift", (1,)),
+                          (self._overlapping, (self._cf, self._h_b), True),
+                          "cf, h_b: not overlapping")
+        self._actions.add((self._ts, self._cf),
+                          ("shift", (1,)),
+                          (self._matching, (self._h_b, self._ts)),
+                          "ts, h_b: formed bps are valid")
         # --------------------------------------------------------------
         # target site - shift down ---> increases expression platform
         # --------------------------------------------------------------
         # size of expression platform is limited
-        self._actions.add((ts, cf),
-                         ("shift", (-1,)),
-                         (lambda ts, cf, a_ub:
-                             (self.element(a_ub).pos[0] -
-                                (self.element(ts).pos[0] - 1)) <=
-                             expression_platform_max_len,
-                          (ts, cf, a_ub)))
+        self._actions.add((self._ts, self._cf),
+                          ("shift", (-1,)),
+                          (lambda ts, cf, a_ub:
+                              (self.element(a_ub).pos[0] -
+                                 (self.element(ts).pos[0])) <=
+                              expression_platform_max_len,
+                           (self._ts, self._cf, self._a_ub)),
+                          ("size of expression platform within limits"))
         # target site and sequestor should still overlap
-        self._actions.add((ts, cf),
-                         ("shift", (-1,)),
-                         (self._overlapping, (h_b, ts)))
-        self._actions.add((ts, cf),
-                         ("shift", (-1,)),
-                         (self._matching, (h_b, ts)))
+        self._actions.add((self._ts, self._cf),
+                          ("shift", (-1,)),
+                          (self._overlapping, (self._h_b, self._ts)),
+                          "ts, h_b: overlapping")
+        self._actions.add((self._ts, self._cf),
+                          ("shift", (-1,)),
+                          (self._matching, (self._h_b, self._ts)),
+                          "ts, h_b: formed bps are valid")
         # --------------------------------------------------------------
         # sequestor - increase stem
         # --------------------------------------------------------------
-        self._actions.add((h_b,),
-                         ("insert_bp_before", (0,)),
-                         (self._matching, (h_b, ts)))
-        self._actions.add((h_b,),
-                         ("insert_bp_before", (0,)),
-                         (self._overlapping, (h_b, a_b), True))
+        self._actions.add((self._h_b,),
+                          ("insert_bp_before", (0,)),
+                          (self._matching, (self._h_b, self._ts)),
+                          "h_b, ts: formed bps are valid")
+        self._actions.add((self._h_b,),
+                          ("insert_bp_before", (0,)),
+                          (self._overlapping, (self._h_b, self._a_b), True),
+                          "h_b, a_b: not overlapping")
         # sequestor has to stay within expression platform
-        self._actions.add((h_b,),
-                         ("insert_bp_before", (0,)),
-                         (self._overlapping, (h_b, cf), True))
+        self._actions.add((self._h_b,),
+                          ("insert_bp_before", (0,)),
+                          (self._overlapping, (self._h_b, self._cf), True),
+                          "h_b, cf: not overlapping")
         # there is a maximum stem size
-        self._actions.add((h_b,),
-                         ("insert_bp_before", (0,)),
-                         (lambda h_b:
-                             len(self.element(h_b).struct.bp_positions) <
-                             hairpin_stem_size[1],
-                          (h_b,)))
+        self._actions.add((self._h_b,),
+                          ("insert_bp_before", (0,)),
+                          (lambda h_b:
+                              len(self.element(h_b).struct.bp_positions) <
+                              hairpin_stem_size[1],
+                           (self._h_b,)),
+                          "h_b: stem size ok")
         # --------------------------------------------------------------
         # anti-sequestor - increase stem
         # --------------------------------------------------------------
-        self._actions.add((h_ub,),
-                         ("insert_bp_before", (0,)),
-                         (self._overlapping, (h_ub, a_ub), True))
-        self._actions.add((h_ub,),
-                         ("insert_bp_before", (0,)),
-                         (self._overlapping, (h_ub, ts), True))
-        self._actions.add((h_ub,),
-                         ("insert_bp_before", (0,)),
-                         (lambda h_ub, h_b: self.element(h_b).pos[0] <
-                                            self.element(h_ub).pos[0],
-                          (h_ub, h_b)))
+        self._actions.add((self._h_ub,),
+                          ("insert_bp_before", (0,)),
+                          (self._overlapping, (self._h_ub, self._a_ub), True),
+                          "h_ub, a_ub: not overlapping")
+        self._actions.add((self._h_ub,),
+                          ("insert_bp_before", (0,)),
+                          (self._overlapping, (self._h_ub, self._ts), True),
+                          "h_ub, ts: not overlapping")
+        self._actions.add((self._h_ub,),
+                          ("insert_bp_before", (0,)),
+                          (lambda h_ub, h_b: self.element(h_b).pos[0] <
+                                             self.element(h_ub).pos[0],
+                           (self._h_ub, self._h_b)),
+                          "h_b, h_ub: h_b to the left of h_ub")
         # there is a maximum stem size
-        self._actions.add((h_ub,),
-                         ("insert_bp_before", (0,)),
-                         (lambda h_ub:
-                             len(h_ub.struct.bp_positions) <
-                             hairpin_stem_size[1],
-                          (h_ub,)))
+        self._actions.add((self._h_ub,),
+                          ("insert_bp_before", (0,)),
+                          (lambda h_ub:
+                              len(self.element(h_ub).struct.bp_positions) <
+                              hairpin_stem_size[1],
+                           (self._h_ub,)),
+                          "h_ub: stem size ok")
         # --------------------------------------------------------------
         # sequestor - decrease stem
         # --------------------------------------------------------------
-        self._actions.add((h_b,),
-                         ("remove_bp", (0,)),
-                         (self._matching, (h_b, ts)))
-        self._actions.add((h_b,),
-                         ("remove_bp", (0,)),
-                         (lambda h_b, h_ub: self.element(h_b).pos[0] <
-                                            self.element(h_ub).pos[0],
-                          (h_b, h_ub)))
-        self._actions.add((h_b,),
-                         ("remove_bp", (0,)),
-                         (self._within_dist, (h_b, h_ub, 0)))
+        self._actions.add((self._h_b,),
+                          ("remove_bp", (0,)),
+                          (self._matching, (self._h_b, self._ts)),
+                          "h_b, ts: formed bps are valid")
+        self._actions.add((self._h_b,),
+                          ("remove_bp", (0,)),
+                          (lambda h_b, h_ub: self.element(h_b).pos[0] <
+                                             self.element(h_ub).pos[0],
+                           (self._h_b, self._h_ub)),
+                          "h_b, h_ub: h_b to the left of h_ub")
+        self._actions.add((self._h_b,),
+                          ("remove_bp", (0,)),
+                          (self._within_dist, (self._h_b, self._h_ub, 0)),
+                          "h_b, h_ub: within distance")
         # there is a minimum stem size
-        self._actions.add((h_b,),
-                         ("remove_bp", (0,)),
-                         (lambda h_b:
-                            len(self.element(h_b).struct.bp_positions) >
-                            hairpin_stem_size[0],
-                          (h_b,)))
+        self._actions.add((self._h_b,),
+                          ("remove_bp", (0,)),
+                          (lambda h_b:
+                             len(self.element(h_b).struct.bp_positions) >=
+                             hairpin_stem_size[0],
+                           (self._h_b,)),
+                          "h_b: stem size ok")
         # --------------------------------------------------------------
         # anti-sequestor - decrease stem
         # --------------------------------------------------------------
-        self._actions.add((h_ub,),
-                         ("remove_bp", (0,)),
-                         (self._within_dist, (h_ub, h_b, 0)))
+        self._actions.add((self._h_ub,),
+                          ("remove_bp", (0,)),
+                          (self._within_dist, (self._h_ub, self._h_b, 0)),
+                          "h_ub, h_b: formed bps are valid")
         # there is a minimum stem size
-        self._actions.add((h_b,),
-                         ("remove_bp", (0,)),
-                         (lambda h_b:
-                             len(self.element(h_b).struct.bp_positions) >
-                             hairpin_stem_size[0],
-                          (h_b,)))
-        self._actions.add((h_ub,),
-                         ("remove_bp", (0,)),
-                         (self._within_dist,
-                          (h_ub, a_b, ub_hairpin_aptamer_dist)))
+        self._actions.add((self._h_ub,),
+                          ("remove_bp", (0,)),
+                          (lambda h_ub:
+                              len(self.element(h_ub).struct.bp_positions) >=
+                              hairpin_stem_size[0],
+                           (self._h_ub,)),
+                          "h_ub: stem size ok")
+        self._actions.add((self._h_ub,),
+                          ("remove_bp", (0,)),
+                          (self._within_dist, (self._h_ub, self._a_b,
+                                               ub_hairpin_aptamer_dist)),
+                          "h_ub, a_b: within distance")
+
+    def register(self, instance):
+        super(SpliceSiteInstanceSpace, self).register(instance)
+        try:
+            access_constraint = self._elements.pop(rs_e.AccessConstraint.ident)
+            self._elements[self._b1_2_ac] = access_constraint
+        except KeyError:
+            pass
 
     def create_evaluation_files(self, instance, folder):
         self.register(instance)
@@ -535,44 +603,38 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         ub_str = rs_e.State.get_str(ub)
 
         folders = ["", ""]
-        folders[b] = os.path.join(folder, rs_e.State.get_str(b))
-        folders[ub] = os.path.join(folder, rs_e.State.get_str(ub))
-        folders = tuple(folders)
+        folders[b] = os.path.join(folder, b_str)
+        folders[ub] = os.path.join(folder, ub_str)
 
         structs, seq = instance.get_constraints()
         b_struct = structs[b]
         ub_struct = structs[ub]
 
-        pos_instance = instance.pos_instance
+        pos = instance.pos
         pos_riboswitch = instance.pos_riboswitch
-        start = pos_instance[0]
+        start = pos[0]
 
-        ident_a_b = "%s_%s" % (rs_e.Aptamer.ident, b_str)
-        ident_a_ub = "%s_%s" % (rs_e.Aptamer.ident, ub_str)
-        aptamer_start_b = self._elements[ident_a_b].pos[0]
-        aptamer_start_ub = self._elements[ident_a_ub].pos[0]
+        aptamer_start_b = self._elements[self._a_b].pos[0]
+        aptamer_start_ub = self._elements[self._a_ub].pos[0]
 
         # --------------------------------------------------------------
         # write sequestor building block (bb)
         # --------------------------------------------------------------
-        ident = "%s_%s" % (rs_e.Hairpin.ident, b_str)
         i = pos_riboswitch[0] - start
         j = aptamer_start_b - start
-        patterns_h_b = ident
-        write_to_file(os.path.join(folders[b], "%s.%s" % (ident, BB_FILE_EXT)),
-                      ">%s" % ident,
+        write_to_file(os.path.join(folders[b],
+                                   "%s.%s" % (self._h_b, BB_FILE_EXT)),
+                      ">%s" % self._h_b,
                       seq[i:j],
                       b_struct[i:j],
                       BB_TERMINATOR)
         # --------------------------------------------------------------
         # write anti-sequestor bb
         # --------------------------------------------------------------
-        ident = "%s_%s" % (rs_e.Hairpin.ident, ub_str)
         j = aptamer_start_ub - start
-        patterns_h_ub = ident
         write_to_file(os.path.join(folders[ub],
-                                   "%s.%s" % (ident, BB_FILE_EXT)),
-                      ">%s" % ident,
+                                   "%s.%s" % (self._h_ub, BB_FILE_EXT)),
+                      ">%s" % self._h_ub,
                       seq[i:j],
                       ub_struct[i:j],
                       BB_TERMINATOR)
@@ -581,10 +643,9 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # --------------------------------------------------------------
         i = aptamer_start_b - start
         j = pos_riboswitch[1] - start
-        patterns_a_b = ident_a_b
         write_to_file(os.path.join(folders[b],
-                                   "%s.%s" % (ident_a_b, BB_FILE_EXT)),
-                      ">%s" % ident_a_b,
+                                   "%s.%s" % (self._a_b, BB_FILE_EXT)),
+                      ">%s" % self._a_b,
                       seq[i:j],
                       b_struct[i:j],
                       BB_TERMINATOR)
@@ -592,101 +653,100 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # write unbound aptamer bb
         # --------------------------------------------------------------
         i = aptamer_start_ub - start
-        patterns_a_ub = ident_a_ub
         write_to_file(os.path.join(folders[ub],
-                                   "%s.%s" % (ident_a_ub, BB_FILE_EXT)),
-                      ">%s" % ident_a_ub,
+                                   "%s.%s" % (self._a_ub, BB_FILE_EXT)),
+                      ">%s" % self._a_ub,
                       seq[i:j],
                       ub_struct[i:j],
                       BB_TERMINATOR)
         # --------------------------------------------------------------
         # write target site bb
         # --------------------------------------------------------------
-        ident = rs_e.TargetSite.ident
-        ts = self._elements[str(ident)]
+        ts = self._elements[self._ts]
         # NOTE: +1 because of different index counting
         # HACK: +3 omits the ATG/AUG at the start
         i = ts.pos[0] - pos_riboswitch[0] + 1 + 3
         j = ts.pos[1] - pos_riboswitch[0]
         pattern_ts = "%c(%i,%i)" % (ord('%'), i, j)
         write_to_file(os.path.join(folders[0],
-                                   "%s.%s" % (ident, BB_FILE_EXT)),
-                      ">%s" % ident,
+                                   "%s.%s" % (self._ts, BB_FILE_EXT)),
+                      ">%s" % self._ts,
                       str(ts.seq),
                       BB_TERMINATOR)
         write_to_file(os.path.join(folders[1],
-                                   "%s.%s" % (ident, BB_FILE_EXT)),
-                      ">%s" % ident,
+                                   "%s.%s" % (self._ts, BB_FILE_EXT)),
+                      ">%s" % self._ts,
                       str(ts.seq),
                       BB_TERMINATOR)
         # --------------------------------------------------------------
         # write accessibility constraint bb
         # --------------------------------------------------------------
-        ident = "%s_%s" % ("b1_2", str(rs_e.AccessConstraint.ident))
-        ac = self._elements[ident]
-        a_ub = "%s_%s" % (self._elements[rs_e.Aptamer.ident], ub_str)
+        ac = self._elements[self._b1_2_ac]
         # NOTE: +1 because of different index counting
-        i = ac.pos[0] - a_ub.pos[0] + 1
-        j = ac.pos[1] - a_ub.pos[1]
+        i = ac.pos[0] - self._elements[self._a_ub].pos[0] + 1
+        j = ac.pos[1] - self._elements[self._a_ub].pos[1]
         pattern_ac = "%c(%i,%i)" % (ord('%'), i, j)
         write_to_file(os.path.join(folders[ub],
-                                   "%s.%s" % (ident, BB_FILE_EXT)),
-                      ">%s" % ident,
+                                   "%s.%s" % (self._b1_2_ac, BB_FILE_EXT)),
+                      ">%s" % self._b1_2_ac,
                       str(ac.seq),
                       BB_TERMINATOR)
         # --------------------------------------------------------------
         # write context front bb (if existent)
         # --------------------------------------------------------------
-        if pos_riboswitch[0] != pos_instance[0]:
-            ident = rs_e.ContextFront.ident
+        if pos_riboswitch[0] != pos[0]:
             i = 0
             j = pos_riboswitch[0]
-            pattern_cf = "%s%s" % (ident, unichr(167).encode("utf-8"))
+            pattern_cf = "%s%s" % (self._cf, unichr(167).encode("utf-8"))
+            seq = self._elements[self._cf].seq
             write_to_file(os.path.join(folders[0],
-                                       "%s.%s" % (ident, BB_FILE_EXT)),
-                          ">%s" % ident,
+                                       "%s.%s" % (self._cf, BB_FILE_EXT)),
+                          ">%s" % self._cf,
                           seq[i:j],
                           BB_TERMINATOR)
             write_to_file(os.path.join(folders[1],
-                                       "%s.%s" % (ident, BB_FILE_EXT)),
-                          ">%s" % ident,
+                                       "%s.%s" % (self._cf, BB_FILE_EXT)),
+                          ">%s" % self._cf,
                           seq[i:j],
                           BB_TERMINATOR)
         # --------------------------------------------------------------
         # write context back bb (if existent)
         # --------------------------------------------------------------
-        if pos_riboswitch[1] != pos_instance[1]:
-            ident = rs_e.ContextBack.ident
+        if pos_riboswitch[1] != pos[1]:
             i = pos_riboswitch[1]
-            j = pos_instance[1]
-            pattern_cb = "%s%s" % (ident, unichr(167).encode("utf-8"))
+            j = pos[1]
+            pattern_cb = "%s%s" % (self._cf, unichr(167).encode("utf-8"))
+            seq = self._elements[self._cb].seq
             write_to_file(os.path.join(folders[0],
-                                       "%s.%s" % (ident, BB_FILE_EXT)),
-                          ">%s" % ident,
+                                       "%s.%s" % (self._cb, BB_FILE_EXT)),
+                          ">%s" % self._cb,
                           seq[i:j],
                           BB_TERMINATOR)
             write_to_file(os.path.join(folders[1],
-                                       "%s.%s" % (ident, BB_FILE_EXT)),
-                          ">%s" % ident,
+                                       "%s.%s" % (self._cb, BB_FILE_EXT)),
+                          ">%s" % self._cb,
                           seq[i:j],
                           BB_TERMINATOR)
         # --------------------------------------------------------------
         # write pattern file
         # --------------------------------------------------------------
+        evaluation_patterns = [None, None]
+        # bound case
+        evaluation_patterns[rs_e.State.bound] = (
+            "({}|%%s%%s#%%s%s&%%s%%s|1)" % unichr(167).encode("utf-8"))
+        # unbound case
+        evaluation_patterns[rs_e.State.unbound] = (
+            "({}|%%s%%s#%%s%s%%s#%%s%%s|1)" % unichr(167).encode("utf-8"))
+        # fill the patterns with the identifiers and write them to file
         write_to_file(os.path.join(folders[b], PATTERN_FILE_NAME),
                       ">pattern_%s" % b_str,
-                      self._evaluation_patterns[b] % (pattern_cf,
-                                                      pattern_ts,
-                                                      patterns_h_b,
-                                                      patterns_a_b,
-                                                      pattern_cb))
+                      evaluation_patterns[b] % (pattern_cf, pattern_ts,
+                                                self._h_b, self._a_b,
+                                                pattern_cb))
         write_to_file(os.path.join(folders[ub], PATTERN_FILE_NAME),
                       ">pattern_%s" % ub_str,
-                      self._evaluation_patterns[ub] % (pattern_cf,
-                                                       pattern_ts,
-                                                       patterns_h_ub,
-                                                       pattern_ac,
-                                                       patterns_a_ub,
-                                                       pattern_cb))
+                      evaluation_patterns[ub] % (pattern_cf, pattern_ts,
+                                                 self._h_ub, pattern_ac,
+                                                 self._a_ub, pattern_cb))
 
         return folders

@@ -1,47 +1,49 @@
+.. module:: riboconstruct.riboswitch
+
 riboconstruct.riboswitch package
 ================================
+
+:mod:`riboconstruct.riboswitch` provides functionalities to represent riboswitches and to iterate all instances of a certain riboswitch within defined boundaries.
+
+* :class:`~riboconstruct.riboswitch.Riboswitch` is used to represent riboswitches. It is basically a collection of riboswitch  :class:`~riboconstruct.riboswitch.element.Element`\ s which define the actual riboswitch by their size, structure and sequence.
+  
+  These elements can simpy be added and removed from the riboswitch. Furthermore, methods like :func:`~riboconstruct.riboswitch.Riboswitch.get_constraints` can be used to get the actual structures for the bound and unbound state as well as the sequence of a specific riboswitch instance.
+  
+* :class:`~riboconstruct.riboswitch.element.Element` and its subclasses represent the different entities like hairpins, the aptamer or a target site within a riboswitch. They define the actual riboswitch.
+
+* :mod:`~riboconstruct.riboswitch.generation` provides functionalities to iterate all possible riboswitch instances within defined boundaries and to generate the information files that needed by ``RNAf`` in order to evaluate the riboswitch instances for their folding behaviour.
+
+
+Module
+~~~~~~
 
 .. automodule:: riboconstruct.riboswitch
     :members:
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
+    :special-members: __eq__, __repr__, __hash__
 
 
 Submodules
-----------
+~~~~~~~~~~
 
 element
 ^^^^^^^
 
 .. automodule:: riboconstruct.riboswitch.element
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+   :private-members:
+   
+generation
+^^^^^^^^^^
 
-generator
-^^^^^^^^^
-
-.. automodule:: riboconstruct.riboswitch.generator
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-siblings_generator
-^^^^^^^^^^^^^^^^^^
-
-.. automodule:: riboconstruct.riboswitch.siblings_generator
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
-siblings_generator_2
-^^^^^^^^^^^^^^^^^^^^
-
-.. automodule:: riboconstruct.riboswitch.siblings_generator_2
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
+.. automodule:: riboconstruct.riboswitch.generation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :inherited-members:
+   :member-order: bysource

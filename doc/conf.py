@@ -13,7 +13,6 @@
 # serve to show the default.
 
 import sys
-import os
 
 
 # -- Mock some libraries that are not available on rtfd.org -------------------
@@ -34,6 +33,7 @@ class Mock(object):
             return type(name, (), {})
         else:
             return Mock()
+
 
 MOCK_MODULES = ['argparse', 'matplotlib', 'matplotlib.backends']
 for mod_name in MOCK_MODULES:
