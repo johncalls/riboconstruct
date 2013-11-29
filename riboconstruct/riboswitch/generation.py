@@ -1,5 +1,6 @@
 import collections
 import os.path
+import sys
 
 from . import element as rs_e
 from .. import rna
@@ -21,6 +22,15 @@ def write_to_file(file_, *out):
     with open(file_, 'w') as f:
         for line in out:
             f.write("%s\n" % str(line))
+
+
+def write_instances(instance_iterator, output=sys.stdout):
+    """
+    Write all instances returned by the *instance_iterator* to *output*
+    (standard is :attr:`sys.stdout`).
+    """
+    for p_id, r_id, r in instance_iterator:
+        print >> output, p_id, r_id, r
 
 
 class InstanceSpace(object):
@@ -54,10 +64,21 @@ class InstanceSpace(object):
         sufficient.
         """
         self.register(instance)
-        return all(constraint(*c_args) if not inverse else
-                   not constraint(*c_args)
-                   for (constraint, c_args, inverse), _
-                   in self._actions.iter_all_constraints())
+        if any(constraint(*c_args) if inverse else not constraint(*c_args)
+               for (constraint, c_args, inverse), _
+               in self._actions.iter_all_constraints()):
+            return False
+        cf = self._elements[rs_e.ContextFront.ident]
+        if cf.pos[0] != instance.pos[0]:
+            return False
+        if cf.pos[0] == cf.pos[1] and cf.pos[0] != instance.pos_riboswitch[0]:
+            return False
+        cb = self._elements[rs_e.ContextBack.ident]
+        if cb.pos[1] != instance.pos[1]:
+            return False
+        if cb.pos[0] == cb.pos[1] and cb.pos[0] != instance.pos_riboswitch[1]:
+            return False
+        return True
 
     def get_detailed_validation(self, instance):
         """
@@ -75,7 +96,7 @@ class InstanceSpace(object):
                 s.append('- %s' % descr)
         return '\n'.join(s)
 
-    def register(self, instance):
+    def register(self, instance, reset=False):
         """
         Rearranges the elements of the riboswitch *instance* such that
         they are accessible by an unique identifier.
@@ -84,7 +105,8 @@ class InstanceSpace(object):
         subclass, if the identifiers defined in this method are not
         sufficient.
         """
-        if (self._current_instance is not None and
+        if (not reset and
+            self._current_instance is not None and
             instance == self._current_instance):
             return
         self._current_instance = instance
@@ -98,14 +120,16 @@ class InstanceSpace(object):
                                    rs_e.State.get_str(element.state))
             self._elements[ident] = element
         # if there are no context elements, add dummies
-        if rs_e.ContextFront.ident not in instance.elements:
+        if rs_e.ContextFront.ident not in self._elements:
             pos = (instance.pos_riboswitch[0], instance.pos_riboswitch[0])
             cf = rs_e.ContextFront(pos, ())
             self._elements[cf.ident] = cf
-        if rs_e.ContextBack.ident not in instance.elements:
+            instance.add(cf)
+        if rs_e.ContextBack.ident not in self._elements:
             pos = (instance.pos_riboswitch[1], instance.pos_riboswitch[1])
             cb = rs_e.ContextBack(pos, ())
             self._elements[cb.ident] = cb
+            instance.add(cb)
 
     def create_evaluation_files(self, instance, folder):
         """
@@ -129,18 +153,20 @@ class InstanceSpace(object):
                        for (constraint, c_args, inverse), _
                        in self._actions.iter_constraints(target_ident, action))
 
-        self.register(instance)
         for target_ident in self._actions.iter_target_identifiers():
             for action_ident in self._actions.iter_actions(target_ident):
+                self.register(instance, reset=True)
+                alternation = instance.copy()
                 action, a_args = action_ident
                 # alter the current instance
-                alternation = instance.copy()
                 for single_target_ident in target_ident:
                     # perform the action and replace the old riboswitch
                     # element by the new one
                     old = self._elements[single_target_ident]
                     new = getattr(old, action)(*a_args)
                     alternation.replace(old, new)
+                    self._elements[single_target_ident] = new
+                    self._current_instance = None
                 # check constraints for each target_ident and action
                 if constraints_fulfilled(target_ident, action_ident):
                     yield alternation
@@ -310,7 +336,7 @@ class InstanceIterator(object):
         if not len(self._open_list):
            raise StopIteration("No more new riboswitches.")
         parent_id, riboswitch_id, riboswitch = self._open_list.popleft()
-        for i, sibling in enumerate(self._instance_space.iter_alterations(riboswitch)):
+        for sibling in self._instance_space.iter_alterations(riboswitch):
             if sibling in self._closed_list:
                 continue
             self._id += 1
@@ -360,10 +386,10 @@ class SpliceSiteInstanceSpace(InstanceSpace):
         # all constraints are in the following format:
         #
         # self._actions.add(
-        #   (self._h_b,),                               # target_ident
-        #   ("shift", (1,)),                           # action
+        #   (self._h_b,),                                # target_ident
+        #   ("shift", (1,)),                             # action
         #   (self._matching, (self._h_b, self._ts, 1)),  # constraint
-        #   "descr")                                   # descr
+        #   "descr")                                     # descr
         # --------------------------------------------------------------
         # sequestor - shift up
         # --------------------------------------------------------------
@@ -561,13 +587,17 @@ class SpliceSiteInstanceSpace(InstanceSpace):
                              hairpin_stem_size[0],
                            (self._h_b,)),
                           "h_b: stem size ok")
+        self._actions.add((self._h_b,),
+                          ("remove_bp", (0,)),
+                          (self._overlapping, (self._h_b, self._ts)),
+                          "h_b, ts: overlapping")
         # --------------------------------------------------------------
         # anti-sequestor - decrease stem
         # --------------------------------------------------------------
         self._actions.add((self._h_ub,),
                           ("remove_bp", (0,)),
                           (self._within_dist, (self._h_ub, self._h_b, 0)),
-                          "h_ub, h_b: formed bps are valid")
+                          "h_ub, h_b: within distance")
         # there is a minimum stem size
         self._actions.add((self._h_ub,),
                           ("remove_bp", (0,)),
@@ -582,8 +612,8 @@ class SpliceSiteInstanceSpace(InstanceSpace):
                                                ub_hairpin_aptamer_dist)),
                           "h_ub, a_b: within distance")
 
-    def register(self, instance):
-        super(SpliceSiteInstanceSpace, self).register(instance)
+    def register(self, instance, reset=False):
+        super(SpliceSiteInstanceSpace, self).register(instance, reset)
         try:
             access_constraint = self._elements.pop(rs_e.AccessConstraint.ident)
             self._elements[self._b1_2_ac] = access_constraint
