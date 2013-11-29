@@ -89,7 +89,8 @@ def iter_riboswitch(config):
             elif re_type == rs_e.Type.target_site:
                 seq = rna.IUPACSequence(line.upper())
                 if pos[1] - pos[0] != len(seq):
-                    raise ValueError("Restriction site element has wrong size.")
+                    raise ValueError("Restriction site element has wrong "
+                                     "size.")
                 yield rs_e.TargetSite(pos, seq)
             elif re_type == rs_e.Type.context_front:
                 seq = rna.IUPACSequence(line)
@@ -249,8 +250,12 @@ class Riboswitch(object):
         # check the positions of the riboswitch instance
         if element.type == rs_e.Type.context_front:
             self.pos[0] = element.pos[0]
+            if element.pos[0] == element.pos[1]:
+                self.pos_riboswitch[0] = element.pos[0]
         elif element.type == rs_e.Type.context_back:
             self.pos[1] = element.pos[1]
+            if element.pos[0] == element.pos[1]:
+                self.pos_riboswitch[1] = element.pos[1]
         elif element.type == rs_e.Type.aptamer:
             if element.pos[1] > self.pos[1]:
                 self.pos[1] = element.pos[1]
