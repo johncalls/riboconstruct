@@ -235,10 +235,6 @@ class Riboswitch(object):
         """Returns a copy of the riboswitch."""
         new = Riboswitch()
         new.elements = set(self.elements)
-        # TODO: remove later
-        new._elements = (
-            list(list(element)
-                 for element in self._elements))
         new.pos = copy.deepcopy(self.pos)
         new.pos_riboswitch = copy.deepcopy(self.pos_riboswitch)
         return new
@@ -249,8 +245,6 @@ class Riboswitch(object):
         the instance.
         """
         self.reset_repr()
-        # TODO: remove later
-        self._elements[element.type].append(element)
         self.elements.add(element)
         # check the positions of the riboswitch instance
         if element.type == rs_e.Type.context_front:
@@ -279,11 +273,6 @@ class Riboswitch(object):
             self.elements.remove(element)
         except KeyError:
             pass
-        try:
-            # remove old if it exists
-            self._elements[element.type].remove(element)
-        except ValueError:
-            pass
 
     def replace(self, old, new):
         """
@@ -294,6 +283,8 @@ class Riboswitch(object):
         self.add(new)
 
     def get_accessibility_positions(self):
+        raise NotImplementedError
+
         # TODO: HACK: this hole method is really hacky; replace/remove somehow!
         start = self.pos[0]
         rs = list(self._elements[rs_e.Type.target_site][0].pos)
