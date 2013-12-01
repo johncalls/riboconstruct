@@ -148,31 +148,32 @@ def get_riboswitch_from_str(riboswitch_str):
 
     for element in elements_iter:
         element = element[1:-1].split(' ')  # get rid of '(' and ')' and split
-        type_ = element[0].rsplit('_', 1)  # split type from state
+        ident = element[0].rsplit('_', 1)  # split ident from state
         try:
-            type_, state = type_
+            ident, state = ident
         except ValueError:  # element has no state
-            type_ = type_[0]
+            ident = ident[0]
             pos = int(element[1][1:-1]), int(element[2][:-1])
-            seq = rna.Sequence(element[3][1:-1])
-            if type_ == rs_e.TargetSite.ident:
-                riboswitch.add(rs_e.TargetSite(pos, seq))
-            elif type_ == rs_e.ContextFront.ident:
-                riboswitch.add(rs_e.ContextFront(pos, seq))
-            elif type_ == rs_e.ContextBack.ident:
-                riboswitch.add(rs_e.ContextBack(pos, seq))
-            elif type_ == rs_e.AccessConstraint.ident:
-                riboswitch.add(rs_e.AccessConstraint(pos, seq))
+            if ident == rs_e.AccessConstraint.ident:
+                riboswitch.add(rs_e.AccessConstraint(pos))
+            else:
+                seq = rna.Sequence(element[3][1:-1])
+                if ident == rs_e.TargetSite.ident:
+                    riboswitch.add(rs_e.TargetSite(pos, seq))
+                elif ident == rs_e.ContextFront.ident:
+                    riboswitch.add(rs_e.ContextFront(pos, seq))
+                elif ident == rs_e.ContextBack.ident:
+                    riboswitch.add(rs_e.ContextBack(pos, seq))
         else:  # element has a state
             state = (rs_e.State.bound
                      if state == rs_e.State.get_str(rs_e.State.bound)
                      else rs_e.State.unbound)
             pos = int(element[1][1:-1]), int(element[2][:-1])
             struct = rna.Structure(element[3][1:-1])
-            if type_ == rs_e.Aptamer.ident:
+            if ident == rs_e.Aptamer.ident:
                 seq = rna.Sequence(element[4][1:-1])
                 riboswitch.add(rs_e.Aptamer(state, pos, struct, seq))
-            elif type_ == rs_e.Hairpin.ident:
+            elif ident == rs_e.Hairpin.ident:
                 riboswitch.add(rs_e.Hairpin(state, pos, struct))
 
     return riboswitch
@@ -312,8 +313,8 @@ class Riboswitch(object):
         Get the structural constraints for both conformations and the
         sequential constraint defined by the riboswitch's elements
         (including the defined
-        :class:`~riboconstruct.riboswitch.element.Context`, if there is
-        any).
+        :class:`~riboconstruct.riboswitch.element.Context` elements, if
+        there are any).
 
         Example: ::
 
@@ -329,7 +330,7 @@ class Riboswitch(object):
         Get the structural constraints for both conformations and the
         sequential constraint defined by the riboswitch's elements
         (without any
-        :class:`~riboconstruct.riboswitch.element.Context`).
+        :class:`~riboconstruct.riboswitch.element.Context` elements).
         """
         return self._get_constraints(self.pos_riboswitch,
                                      (e for e in self.elements
@@ -337,7 +338,7 @@ class Riboswitch(object):
                                           e.type != rs_e.Type.context_back)))
 
     def reset_repr(self):
-        """Reset the string representation."""
+        """Reset the :class:`str` representation."""
         try:
             del self._str
         except AttributeError:
