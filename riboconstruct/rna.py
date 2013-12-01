@@ -329,7 +329,7 @@ class Structure(object):
 class Sequence(object):
     """RNA sequence representation."""
 
-    base_check = re.compile(r"[^%s]" % ''.join(BASES[:-1]), re.IGNORECASE)
+    base_check = re.compile(r"[^%s]" % ''.join(BASES), re.IGNORECASE)
 
     def __init__(self, seq):
         if type(seq) is not Sequence and self.base_check.search(seq):
