@@ -175,6 +175,7 @@ def get_riboswitch_from_str(riboswitch_str):
                 riboswitch.add(rs_e.Aptamer(state, pos, struct, seq))
             elif ident == rs_e.Hairpin.ident:
                 riboswitch.add(rs_e.Hairpin(state, pos, struct))
+    riboswitch._str = riboswitch_str
 
     return riboswitch
 
