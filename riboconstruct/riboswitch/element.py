@@ -53,13 +53,27 @@ EXPRESSION_PLATFORM_TYPES = set((Type.hairpin, Type.target_site))
 class Element(object):
     """Base class of the different riboswitch element types."""
 
-    __all__ = ["type", "ident"]
+    __all__ = ["type", "ident", "__eq__", "__hash__"]
 
     def __init__(self, state, pos, struct, seq):
         self.state = state
         self.pos = pos
         self.struct = struct
         self.seq = seq
+
+    def __eq__(self, other):
+        """
+        Compares two riboswitch elements based on their string
+        representation.
+        """
+        return repr(self) == repr(other)
+
+    def __hash__(self):
+        """
+        Returns the hash value of a riboswitch element which is based on
+        the element's string representation.
+        """
+        return hash(repr(self))
 
 
 class Aptamer(Element):
