@@ -272,7 +272,7 @@ class Riboswitch(object):
 
     def remove(self, element):
         """
-        Remove a :class:`~riboconstruct.riboswitch.element` from this
+        Remove an :class:`~riboconstruct.riboswitch.element` from this
         riboswitch.
         """
         try:

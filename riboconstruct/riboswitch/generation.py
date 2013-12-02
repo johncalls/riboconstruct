@@ -270,14 +270,14 @@ class ActionContainer(object):
         *target_ident* identifies the specific riboswitch elements the
         action is performed on within
         :attr:`~RiboswitchInstanceSpace.elements` at runtime. Has
-        to be a tuple and can contain several identifiers for different
-        riboswitch elements.
+        to be a tuple which can contain several identifiers for
+        different riboswitch elements.
 
         *action* specifies how the targeted riboswitch element is
         altered. Has to be a tuple of the form ``(action_fct,
-        action_arguments)``, where the first entry is a :class:`str`
-        defining an alternation action and the second is a tuple
-        specifying the arguments used for the action.
+        action_args)``, where the first entry is a :class:`str` defining
+        an alternation action and the second is a tuple specifying the
+        arguments used for the action.
 
         *constraint* defines the constraint that has to be fulfilled to
         make the action valid. Has to be a tuple of the form
@@ -375,7 +375,6 @@ class InstanceIterator(object):
         return self
 
     def next(self):
-        """Iterates over the riboswitch instance space."""
         if not len(self._open_list):
            raise StopIteration("No more new riboswitches.")
         parent_id, riboswitch_id, riboswitch_str = self._open_list.popleft()
