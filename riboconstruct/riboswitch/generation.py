@@ -114,7 +114,7 @@ class RiboswitchInstanceSpace(object):
             result = (constraint(*c_args) if not inverse else
                       not constraint(*c_args))
             if not result:
-                s.append('- %s' % str(c))
+                s.append('- %s' % descr)
         return '\n'.join(s)
 
     def create_evaluation_files(self, instance, folder):
@@ -263,9 +263,9 @@ class ActionContainer(object):
 
     def add(self, target_ident, action, constraint, descr=None):
         """
-        Add a target-action-constraint to the container. These triplets
-        define actions which are performed on the specified target if
-        and only if the specified constraint is fulfilled.
+        Add a target-action-constraint triplet to the container. These
+        triplets define actions which are performed on the specified
+        target if and only if the specified constraint is fulfilled.
 
         *target_ident* identifies the specific riboswitch elements the
         action is performed on within
@@ -302,7 +302,7 @@ class ActionContainer(object):
             h_ub = "%s_%s" % (rs_e.Hairpin.ident, "ub")
             h_b = "%s_%s" % (rs_e.Hairpin.ident, "b")
 
-            target_ident = h_ub
+            target_ident = (h_ub,)
             action = ("shift", (-1,))
             # ensures that the bound hairpin is always left of the unbound
             # hairpin when shifting the unbound hairpin downstream
