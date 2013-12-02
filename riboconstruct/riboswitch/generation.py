@@ -166,7 +166,7 @@ class RiboswitchInstanceSpace(object):
                         new_instance.replace(old, new)
                     yield new_instance
 
-    def _register(self, instance, overwrite=False):
+    def register(self, instance, overwrite=False):
         """
         Rearranges the elements of the riboswitch *instance* such that
         they are accessible by an unique identifier in :attr:`elements`.
@@ -828,7 +828,7 @@ class SpliceSiteInstanceSpace(RiboswitchInstanceSpace):
 
         return folders
 
-    def _register(self, instance, overwrite=False):
+    def register(self, instance, overwrite=False):
         super(SpliceSiteInstanceSpace, self).register(instance, overwrite)
         try:
             access_constraint = self.elements.pop(rs_e.AccessConstraint.ident)
