@@ -56,8 +56,8 @@ class RiboswitchInstanceSpace(object):
     use case.
     """
 
-    __all__ = ["validate", "get_detailed_validation", "elements", "actions"
-               "create_evaluation_files", "iter_alterations"]
+    __all__ = ["validate", "get_detailed_validation", "elements", "actions",
+               "register", "create_evaluation_files", "iter_alterations"]
 
     def __init__(self):
         self._current_instance = None
@@ -83,7 +83,7 @@ class RiboswitchInstanceSpace(object):
         :class:`RiboswitchInstanceSpace` subclass, if the validation
         defined in this method is not sufficient.
         """
-        self._register(instance)
+        self.register(instance)
         if any(constraint(*c_args) if inverse else not constraint(*c_args)
                for constraint, c_args, _, inverse
                in self.actions.iter_all_constraints()):
@@ -107,7 +107,7 @@ class RiboswitchInstanceSpace(object):
         *instance*.
         """
         s = []
-        self._register(instance)
+        self.register(instance)
         s.append("The following constraints failed:")
         for c in set(self.actions.iter_all_constraints()):
             constraint, c_args, descr, inverse = c
@@ -140,35 +140,43 @@ class RiboswitchInstanceSpace(object):
                        for constraint, c_args, _, inverse
                        in self.actions.iter_constraints(target_ident, action))
 
+        self.register(instance)
         for target_ident in self.actions.iter_target_identifiers():
             for action_ident in self.actions.iter_actions(target_ident):
-                self._register(instance, overwrite=True)
-                alternation = instance.copy()
+                elements = dict()
                 action, a_args = action_ident
-                # alter the current instance
+                # alter the targets
                 for single_target_ident in target_ident:
                     # perform the action and replace the old riboswitch
-                    # element by the new one
+                    # element by the new one in self.elements
                     old = self.elements[single_target_ident]
                     new = getattr(old, action)(*a_args)
-                    alternation.replace(old, new)
                     self.elements[single_target_ident] = new
-                    self._current_instance = None
-                # check constraints for each target_ident and action
-                if constraints_fulfilled(target_ident, action_ident):
-                    yield alternation
+                    elements[single_target_ident] = (old, new)
+                # check constraints on the altered self.elements
+                valid = constraints_fulfilled(target_ident, action_ident)
+                # restore self.elements _before_ anything is yielded
+                for single_target_ident, (element, _) in elements.iteritems():
+                    self.elements[single_target_ident] = element
+                if valid:
+                    # if the new elements are valid, return a new riboswitch
+                    # instance containing these elements
+                    new_instance = instance.copy()
+                    for old, new in elements.itervalues():
+                        new_instance.replace(old, new)
+                    yield new_instance
 
     def _register(self, instance, overwrite=False):
         """
         Rearranges the elements of the riboswitch *instance* such that
-        they are accessible by an unique identifier.
+        they are accessible by an unique identifier in :attr:`elements`.
 
         Overwrite this method in the specific
         :class:`RiboswitchInstanceSpace` subclass, if the identifiers
         defined in this method are not sufficient.
         """
         if (not overwrite and
-            self._current_instance is not None and
+            instance is not None and
             instance == self._current_instance):
             return
         self._current_instance = instance
@@ -180,6 +188,8 @@ class RiboswitchInstanceSpace(object):
             else:
                 ident = "%s_%s" % (element.ident,
                                    rs_e.State.get_str(element.state))
+            if ident in self.elements:
+                raise ValueError, "Identifiers not unique"
             self.elements[ident] = element
         # if there are no context elements, add dummies
         if rs_e.ContextFront.ident not in self.elements:
@@ -658,7 +668,7 @@ class SpliceSiteInstanceSpace(RiboswitchInstanceSpace):
         *folder* to evaluate the riboswitch *instance*.
         """
 
-        self._register(instance)
+        self.register(instance)
         if not os.path.exists(folder):
             raise OSError("Folder '%s' does not exist." % folder)
         if not self.validate(instance):
@@ -819,7 +829,7 @@ class SpliceSiteInstanceSpace(RiboswitchInstanceSpace):
         return folders
 
     def _register(self, instance, overwrite=False):
-        super(SpliceSiteInstanceSpace, self)._register(instance, overwrite)
+        super(SpliceSiteInstanceSpace, self).register(instance, overwrite)
         try:
             access_constraint = self.elements.pop(rs_e.AccessConstraint.ident)
             self.elements[self._b1_2_ac] = access_constraint
