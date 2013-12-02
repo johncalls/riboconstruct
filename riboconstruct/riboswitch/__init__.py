@@ -196,7 +196,6 @@ class Riboswitch(object):
 
     def __init__(self):
         self.elements = set()
-        self._elements = [[] for _ in xrange(rs_e.Type.count)]
 
         maxint = sys.maxint
         minint = -maxint - 1
@@ -285,7 +284,7 @@ class Riboswitch(object):
         Replace an *old* riboswitch
         :class:`~riboconstruct.riboswitch.element` by a *new* one.
         """
-        self.remove(old)
+        self.elements.remove(old)  # do not catch KeyError
         self.add(new)
 
     def get_accessibility_positions(self):
