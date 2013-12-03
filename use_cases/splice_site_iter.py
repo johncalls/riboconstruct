@@ -17,7 +17,7 @@ if not i_s.validate(initial_riboswitch):
 
 # iterate the instances
 instance_iter = rs_gen.InstanceIterator(i_s, initial_riboswitch)
-for i, (p_id, r_id, riboswitch) in enumerate(instance_iter):
+for p_id, r_id, riboswitch in instance_iter:
     # explicitly validate each instance again in each step
     # NOTE: this is _not_ necessary since the instance iterator only returns
     #       valid instances
