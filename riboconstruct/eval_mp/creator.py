@@ -11,16 +11,16 @@ def build_eval_dir(instance_iter, output_dir, q_out=None):
     Builds the evaluation directory within *output_dir*. This directory
     is organized in a parent-sibling way, that is, all sibling
     riboswitches derived from a certain parent riboswitch are stored
-    within the same subdirectory identified by the parent's id.
+    within the same subdirectory identified by the parent's id. To be
+    able to handle the vast amount of parent ids, these are organized
+    previously in groups. The maximum number of groups is defined by
+    :attr:`settings.NUM_PARENT_GROUPS`.
 
-    To be able to handle the vast amount of parent ids, these are
-    organized previously in groups. The maximum number of groups is
-    defined by :attr:`settings.NUM_PARENT_GROUPS`.
-
-    If *q_out* is not ``None``, a tuple containing the parent id, the
-    riboswitch id and the riboswitch string representation is put into
-    the queue. *q_out* is expected to be a
-    :class:`multiprocessing.Queue`.
+    If *q_out* is ``None``, the id and the generated riboswitches are
+    written into the "siblings" file in the respective parent directory.
+    If *q_out* is not ``None`` and a :class:`multiprocessing.Queue`,
+    a tuple containing the parent id, the riboswitch id and the
+    riboswitch string representation is put into *q_out*.
     """
     siblings = []
     previous_p_id = -1
@@ -30,10 +30,11 @@ def build_eval_dir(instance_iter, output_dir, q_out=None):
             parent_folder = os.path.join(output_dir, str(group_id),
                                          str(previous_p_id))
             os.makedirs(parent_folder)
-            with open(os.path.join(parent_folder, "siblings"), 'w') as fh:
-                for s_id, s in siblings:
-                    fh.write("%i %s\n" % (s_id, s))
-            if q_out is not None:
+            if q_out is None:
+                with open(os.path.join(parent_folder, "siblings"), 'w') as fh:
+                    for s_id, s in siblings:
+                        fh.write("%i %s\n" % (s_id, s))
+            else:
                 q_out.put((p_id, s_id, str(s)))
             siblings = []
             previous_p_id = p_id
