@@ -37,6 +37,4 @@ def build_eval_dir(instance_iter, output_dir, q_out=None):
                 q_out.put((p_id, s_id, str(s)))
             siblings = []
             previous_p_id = p_id
-        siblings.append((r_id, r))
-    if q_out is not None:
-        q_out.put(None)
+        siblings.append((r_id, repr(r)))

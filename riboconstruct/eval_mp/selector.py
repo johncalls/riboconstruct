@@ -10,7 +10,6 @@ def threshold_all(data, limits, comparison=operator.gt):
     for entry in data:
         features = transform_features(entry[1])
         if all(comparison(f, l) for f, l in itertools.izip(features, limits)):
-            print features, limits
             yield entry
 
 
@@ -53,7 +52,8 @@ def iter_eval_data(eval_folder):
 
     for parent_id in sorted(parent_ids()):
         group_id = parent_id % settings.NUM_PARENT_GROUPS
-        parent_folder = os.path.join(eval_folder, str(group_id), str(parent_id))
+        parent_folder = os.path.join(eval_folder, str(group_id),
+                                     str(parent_id))
         siblings_file = os.path.join(parent_folder, "siblings")
         with open(siblings_file) as fh:
             for line in fh:
@@ -83,8 +83,8 @@ def iter_eval_data(eval_folder):
 
 def get_riboswitch_str(eval_folder, parent_id, riboswitch_id):
     group_id = parent_id % settings.NUM_PARENT_GROUPS
-    parent_folder = os.path.join(eval_folder, str(group_id), str(parent_id))
-    siblings_file = os.path.join(parent_folder, "siblings")
+    siblings_file = os.path.join(eval_folder, str(group_id), str(parent_id),
+                                 "siblings")
     with open(siblings_file) as fh:
         for line in fh:
             r_id, r_str = line.rstrip().split(' ', 1)
@@ -94,9 +94,9 @@ def get_riboswitch_str(eval_folder, parent_id, riboswitch_id):
 
 def get_eval_seqs(eval_folder, parent_id, riboswitch_id):
     group_id = parent_id % settings.NUM_PARENT_GROUPS
-    parent_folder = os.path.join(eval_folder,
-                                 str(group_id), str(parent_id))
-    with open(os.path.join(parent_folder, "eval_%i" % riboswitch_id)) as fh:
+    eval_file = os.path.join(eval_folder, str(group_id), str(parent_id),
+                             "eval_%i" % riboswitch_id)
+    with open(eval_file) as fh:
         for line in fh:
             _, seq_id, seq = line.rstrip().rsplit(' ', 2)
             yield int(seq_id[1:-1]), seq[1:-2]
